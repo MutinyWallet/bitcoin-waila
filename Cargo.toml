@@ -1,0 +1,23 @@
+[package]
+name = "bitcoin-waila"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ben Carman <benthecarman@live.com>", "Paul Miller <paul@pauljmiller.com>"]
+license = "MIT"
+homepage = "https://github.com/MutinyWallet/bitcoin-waila/"
+repository = "https://github.com/MutinyWallet/bitcoin-waila/"
+readme = "README.md"
+documentation = "https://docs.rs/bitcoin-waila/"
+description = "\"What am I looking at?\" A tool for decoding bitcoin-related strings."
+keywords = [ "lightning", "bitcoin" ]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bech32 = "0.9.1"
+bitcoin = "0.29.2"
+bip21 = "0.2.0"
+lnurl-rs = { version = "0.1.3", no-default-features = true }
+lightning-invoice = "0.21.0"
+# todo update when 0.0.114 is released
+lightning = { git = "https://github.com/lightningdevkit/rust-lightning", rev = "f71daed02d159e051e065802155d3ad77edbc124"}
