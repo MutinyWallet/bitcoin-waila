@@ -1,8 +1,9 @@
 use core::str::FromStr;
 use std::borrow::Cow;
+use std::convert::TryFrom;
 
-use ::bip21::de::*;
 use ::bip21::*;
+use ::bip21::de::*;
 use lightning_invoice::{Invoice, ParseOrSemanticError};
 
 /// This lets us parse a `lightning` parameter from a BIP21 URI.
@@ -69,8 +70,9 @@ mod test {
     use core::str::FromStr;
     use std::convert::TryFrom;
 
-    use crate::bip21::LightningExtras;
     use lightning_invoice::Invoice;
+
+    use crate::bip21::LightningExtras;
 
     type UnifiedUri<'a> = bip21::Uri<'a, LightningExtras>;
 

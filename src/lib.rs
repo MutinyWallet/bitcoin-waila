@@ -1,14 +1,16 @@
-mod bip21;
-
+use std::convert::TryInto;
 use std::str::FromStr;
 
-use crate::bip21::UnifiedUri;
 use bitcoin::{Address, Amount, Network, PublicKey};
 use lightning::offers::offer;
 use lightning::offers::offer::Offer;
 use lightning_invoice::{Currency, Invoice, InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
+
+use crate::bip21::UnifiedUri;
+
+mod bip21;
 
 #[derive(Debug)]
 pub enum PaymentParams<'a> {
