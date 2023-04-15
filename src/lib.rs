@@ -92,7 +92,7 @@ impl PaymentParams<'_> {
     pub fn invoice(&self) -> Option<Invoice> {
         match self {
             PaymentParams::OnChain(_) => None,
-            PaymentParams::Bip21(uri) => uri.extras.clone().lightning,
+            PaymentParams::Bip21(uri) => uri.extras.lightning.clone(),
             PaymentParams::Bolt11(invoice) => Some(invoice.clone()),
             PaymentParams::Bolt12(_) => None,
             PaymentParams::NodePubkey(_) => None,
@@ -104,7 +104,7 @@ impl PaymentParams<'_> {
     pub fn node_pubkey(&self) -> Option<PublicKey> {
         match self {
             PaymentParams::OnChain(_) => None,
-            PaymentParams::Bip21(uri) => uri.extras.clone().lightning.map(|invoice| {
+            PaymentParams::Bip21(uri) => uri.extras.lightning.clone().map(|invoice| {
                 let secp = invoice.recover_payee_pub_key();
                 PublicKey::new(secp)
             }),
