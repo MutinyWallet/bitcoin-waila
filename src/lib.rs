@@ -184,7 +184,7 @@ mod tests {
         let pubkey = PublicKey::from_str(
             "03e7156ae33b0a208d0744199163177e909e80176e55d97a2f221ede0f934dd9ad",
         )
-            .unwrap();
+        .unwrap();
         let parsed = PaymentParams::from_str(&pubkey.to_string()).unwrap();
 
         assert_eq!(parsed.amount(), None);
@@ -217,7 +217,7 @@ mod tests {
         let expected_pubkey = PublicKey::from_str(
             "03e7156ae33b0a208d0744199163177e909e80176e55d97a2f221ede0f934dd9ad",
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(parsed.amount(), Some(Amount::from_sat(2_000_000)));
         assert_eq!(parsed.amount_msats(), Some(2_000_000_000));
@@ -256,7 +256,15 @@ mod tests {
         assert_eq!(parsed.memo(), Some("For lunch Tuesday".to_string()));
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
         assert_eq!(parsed.invoice(), Some(Invoice::from_str("LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6").unwrap()));
-        assert_eq!(parsed.node_pubkey(), Some(PublicKey::from_str("037cc5f9f1da20ac0d60e83989729a204a33cc2d8e80438969fadf35c1c5f1233b").unwrap()));
+        assert_eq!(
+            parsed.node_pubkey(),
+            Some(
+                PublicKey::from_str(
+                    "037cc5f9f1da20ac0d60e83989729a204a33cc2d8e80438969fadf35c1c5f1233b"
+                )
+                .unwrap()
+            )
+        );
         assert_eq!(parsed.lnurl(), None);
     }
 
