@@ -136,12 +136,31 @@ impl FromStr for PaymentParams<'_> {
     type Err = ();
 
     fn from_str(str: &str) -> Result<Self, Self::Err> {
+        let lower = str.to_lowercase();
+        if lower.starts_with("lightning:") {
+            return Invoice::from_str(str.strip_prefix("lightning:").unwrap())
+                .map(PaymentParams::Bolt11)
+                .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
+                .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
+                .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
+                .map_err(|_| ());
+        } else if lower.starts_with("lnurl:") {
+            return LnUrl::from_str(str.strip_prefix("lnurl:").unwrap())
+                .map(PaymentParams::LnUrl)
+                .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
+                .map_err(|_| ());
+        } else if lower.starts_with("lnurlp:") {
+            return LnUrl::from_str(str.strip_prefix("lnurlp:").unwrap())
+                .map(PaymentParams::LnUrl)
+                .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
+                .map_err(|_| ());
+        }
+
         Address::from_str(str)
             .map(PaymentParams::OnChain)
             .or_else(|_| Invoice::from_str(str).map(PaymentParams::Bolt11))
             .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
             .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
-            .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
             .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
             .or_else(|_| UnifiedUri::from_str(str).map(PaymentParams::Bip21))
             .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
