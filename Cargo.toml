@@ -26,3 +26,6 @@ wasm-bindgen = { version = "0.2", optional = true }
 default = ["std"]
 std = ["bitcoin/std", "lightning-invoice/std", "lightning/std"]
 no-std = ["bitcoin/no-std", "lightning-invoice/no-std", "lightning/no-std"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = true
