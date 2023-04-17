@@ -67,7 +67,7 @@ jobs:
           version: 'latest'
 
       - name: Build wasm
-        run: wasm-pack build --release --target web
+        run: wasm-pack build --release --target web --scoped mutinywallet
 
       - name: Publish wasm
         run: wasm-pack publish --access public -t web
