@@ -9,7 +9,7 @@ repository = "https://github.com/MutinyWallet/bitcoin-waila/"
 readme = "README.md"
 documentation = "https://docs.rs/bitcoin-waila/"
 description = "\"What am I looking at?\" A tool for decoding bitcoin-related strings."
-keywords = [ "lightning", "bitcoin" ]
+keywords = ["lightning", "bitcoin", "bip21", "lnurl"]
 
 [dependencies]
 bitcoin = { version = "0.29.2", default-features = false, features = ["serde"] }
