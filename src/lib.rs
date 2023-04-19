@@ -174,6 +174,8 @@ mod tests {
 
     use super::*;
 
+    const SAMPLE_PUBKEY: &str =
+        "03e7156ae33b0a208d0744199163177e909e80176e55d97a2f221ede0f934dd9ad";
     const SAMPLE_INVOICE: &str = "lnbc20m1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfpp3qjmp7lwpagxun9pygexvgpjdc4jdj85fr9yq20q82gphp2nflc7jtzrcazrra7wwgzxqc8u7754cdlpfrmccae92qgzqvzq2ps8pqqqqqqpqqqqq9qqqvpeuqafqxu92d8lr6fvg0r5gv0heeeqgcrqlnm6jhphu9y00rrhy4grqszsvpcgpy9qqqqqqgqqqqq7qqzq9qrsgqdfjcdk6w3ak5pca9hwfwfh63zrrz06wwfya0ydlzpgzxkn5xagsqz7x9j4jwe7yj7vaf2k9lqsdk45kts2fd0fkr28am0u4w95tt2nsq76cqw0";
     const SAMPLE_BIP21: &str = "bitcoin:1andreas3batLhQa2FawWjeyjCqyBzypd?amount=50&label=Luke-Jr&message=Donation%20for%20project%20xyz";
     const SAMPLE_BIP21_WITH_INVOICE: &str = "bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
@@ -181,10 +183,7 @@ mod tests {
 
     #[test]
     fn parse_node_pubkey() {
-        let pubkey = PublicKey::from_str(
-            "03e7156ae33b0a208d0744199163177e909e80176e55d97a2f221ede0f934dd9ad",
-        )
-        .unwrap();
+        let pubkey = PublicKey::from_str(SAMPLE_PUBKEY).unwrap();
         let parsed = PaymentParams::from_str(&pubkey.to_string()).unwrap();
 
         assert_eq!(parsed.amount(), None);
@@ -213,11 +212,21 @@ mod tests {
     #[test]
     fn parse_invoice() {
         let parsed = PaymentParams::from_str(SAMPLE_INVOICE).unwrap();
+        let expected_pubkey = PublicKey::from_str(SAMPLE_PUBKEY).unwrap();
 
-        let expected_pubkey = PublicKey::from_str(
-            "03e7156ae33b0a208d0744199163177e909e80176e55d97a2f221ede0f934dd9ad",
-        )
-        .unwrap();
+        assert_eq!(parsed.amount(), Some(Amount::from_sat(2_000_000)));
+        assert_eq!(parsed.amount_msats(), Some(2_000_000_000));
+        assert_eq!(parsed.node_pubkey(), Some(expected_pubkey));
+        assert_eq!(parsed.network(), Some(Network::Bitcoin));
+        assert_eq!(parsed.address(), None); // todo: add fallback address
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[test]
+    fn parse_invoice_with_prefix() {
+        let parsed = PaymentParams::from_str(&format!("lightning:{SAMPLE_INVOICE}")).unwrap();
+        let expected_pubkey = PublicKey::from_str(SAMPLE_PUBKEY).unwrap();
 
         assert_eq!(parsed.amount(), Some(Amount::from_sat(2_000_000)));
         assert_eq!(parsed.amount_msats(), Some(2_000_000_000));
@@ -279,6 +288,21 @@ mod tests {
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(parsed.lnurl(), Some(LnUrl::from_str(SAMPLE_LNURL).unwrap()));
+    }
+
+    #[test]
+    fn parse_lnurl_with_prefix() {
+        let parsed = PaymentParams::from_str(&format!("lnurl:{SAMPLE_LNURL}")).unwrap();
+        let parsed_lnurlp = PaymentParams::from_str(&format!("lnurlp:{SAMPLE_LNURL}")).unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.lnurl(), Some(LnUrl::from_str(SAMPLE_LNURL).unwrap()));
+        assert_eq!(parsed.lnurl(), parsed_lnurlp.lnurl());
     }
 
     #[test]
