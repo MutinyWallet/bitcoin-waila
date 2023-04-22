@@ -28,7 +28,7 @@ jobs:
             cargo-${{ runner.os }}-
 
       - name: Cargo Publish
-        run: cargo publish -p waila
+        run: cargo publish -p bitcoin-waila
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
 
