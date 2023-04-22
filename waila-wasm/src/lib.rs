@@ -1,3 +1,4 @@
+use bitcoin::Network;
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
@@ -29,6 +30,12 @@ impl PaymentParams {
     #[wasm_bindgen(getter)]
     pub fn network(&self) -> Option<String> {
         self.params.network().map(|n| n.to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn valid_for_network(&self, network: String) -> Option<bool> {
+        let network = Network::from_str(&network).ok()?;
+        self.params.valid_for_network(network)
     }
 
     #[wasm_bindgen(getter)]

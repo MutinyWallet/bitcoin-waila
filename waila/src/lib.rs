@@ -62,6 +62,26 @@ impl PaymentParams<'_> {
         }
     }
 
+    /// Given the network, determine if the payment params are valid for that network
+    /// Returns None if the network is unknown
+    pub fn valid_for_network(&self, network: Network) -> Option<bool> {
+        match self {
+            PaymentParams::OnChain(address) => Some(address.is_valid_for_network(network)),
+            PaymentParams::Bip21(uri) => Some(uri.address.is_valid_for_network(network)),
+            PaymentParams::Bolt11(invoice) => match invoice.currency() {
+                Currency::Bitcoin => Some(network == Network::Bitcoin),
+                Currency::BitcoinTestnet => Some(network == Network::Testnet),
+                Currency::Regtest => Some(network == Network::Regtest),
+                Currency::Simnet => Some(network == Network::Regtest),
+                Currency::Signet => Some(network == Network::Signet),
+            },
+            PaymentParams::Bolt12(_) => None,
+            PaymentParams::NodePubkey(_) => None,
+            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LightningAddress(_) => None,
+        }
+    }
+
     pub fn amount(&self) -> Option<Amount> {
         self.amount_msats()
             .map(|msats| Amount::from_sat(msats / 1_000))

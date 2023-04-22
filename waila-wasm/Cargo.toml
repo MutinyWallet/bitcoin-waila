@@ -16,4 +16,5 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bitcoin-waila = { path = "../waila" }
+bitcoin = "0.29.2"
 wasm-bindgen = "0.2.84"
