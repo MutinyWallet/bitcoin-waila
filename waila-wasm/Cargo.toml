@@ -1,0 +1,19 @@
+[package]
+name = "waila-wasm"
+version = "0.1.4"
+edition = "2018"
+authors = ["Ben Carman <benthecarman@live.com>", "Paul Miller <paul@pauljmiller.com>"]
+license = "MIT"
+homepage = "https://github.com/MutinyWallet/bitcoin-waila/"
+repository = "https://github.com/MutinyWallet/bitcoin-waila/"
+readme = "README.md"
+documentation = "https://docs.rs/bitcoin-waila/"
+description = "\"What am I looking at?\" A tool for decoding bitcoin-related strings."
+keywords = ["lightning", "bitcoin", "bip21", "lnurl"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bitcoin-waila = { path = "../waila" }
+wasm-bindgen = "0.2.84"
