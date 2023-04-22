@@ -1,7 +1,8 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use bitcoin::{Address, Amount, Network, PublicKey};
+use bitcoin::secp256k1::PublicKey;
+use bitcoin::{Address, Amount, Network};
 use lightning::offers::offer;
 use lightning::offers::offer::Offer;
 use lightning_invoice::{Currency, Invoice, InvoiceDescription};
@@ -27,7 +28,11 @@ impl PaymentParams<'_> {
     pub fn memo(&self) -> Option<String> {
         match self {
             PaymentParams::OnChain(_) => None,
-            PaymentParams::Bip21(uri) => uri.message.clone().and_then(|m| m.try_into().ok()),
+            PaymentParams::Bip21(uri) => uri
+                .message
+                .clone()
+                .and_then(|m| m.try_into().ok())
+                .or_else(|| uri.label.clone().and_then(|l| l.try_into().ok())),
             PaymentParams::Bolt11(invoice) => match invoice.description() {
                 InvoiceDescription::Direct(desc) => Some(desc.to_string()),
                 InvoiceDescription::Hash(_) => None,
@@ -104,14 +109,12 @@ impl PaymentParams<'_> {
     pub fn node_pubkey(&self) -> Option<PublicKey> {
         match self {
             PaymentParams::OnChain(_) => None,
-            PaymentParams::Bip21(uri) => uri.extras.lightning.clone().map(|invoice| {
-                let secp = invoice.recover_payee_pub_key();
-                PublicKey::new(secp)
-            }),
-            PaymentParams::Bolt11(invoice) => {
-                let secp = invoice.recover_payee_pub_key();
-                Some(PublicKey::new(secp))
-            }
+            PaymentParams::Bip21(uri) => uri
+                .extras
+                .lightning
+                .clone()
+                .map(|invoice| invoice.recover_payee_pub_key()),
+            PaymentParams::Bolt11(invoice) => Some(invoice.recover_payee_pub_key()),
             PaymentParams::Bolt12(_) => None,
             PaymentParams::NodePubkey(pubkey) => Some(*pubkey),
             PaymentParams::LnUrl(_) => None,
@@ -179,6 +182,7 @@ mod tests {
     const SAMPLE_INVOICE: &str = "lnbc20m1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfpp3qjmp7lwpagxun9pygexvgpjdc4jdj85fr9yq20q82gphp2nflc7jtzrcazrra7wwgzxqc8u7754cdlpfrmccae92qgzqvzq2ps8pqqqqqqpqqqqq9qqqvpeuqafqxu92d8lr6fvg0r5gv0heeeqgcrqlnm6jhphu9y00rrhy4grqszsvpcgpy9qqqqqqgqqqqq7qqzq9qrsgqdfjcdk6w3ak5pca9hwfwfh63zrrz06wwfya0ydlzpgzxkn5xagsqz7x9j4jwe7yj7vaf2k9lqsdk45kts2fd0fkr28am0u4w95tt2nsq76cqw0";
     const SAMPLE_BIP21: &str = "bitcoin:1andreas3batLhQa2FawWjeyjCqyBzypd?amount=50&label=Luke-Jr&message=Donation%20for%20project%20xyz";
     const SAMPLE_BIP21_WITH_INVOICE: &str = "bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
+    const SAMPLE_BIP21_WITH_INVOICE_AND_LABEL: &str = "bitcoin:tb1p0vztr8q25czuka5u4ta5pqu0h8dxkf72mam89cpg4tg40fm8wgmqp3gv99?amount=0.000001&label=yooo&lightning=lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54";
     const SAMPLE_LNURL: &str = "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS";
 
     #[test]
@@ -270,6 +274,33 @@ mod tests {
             Some(
                 PublicKey::from_str(
                     "037cc5f9f1da20ac0d60e83989729a204a33cc2d8e80438969fadf35c1c5f1233b"
+                )
+                .unwrap()
+            )
+        );
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[test]
+    fn parse_bip_21_with_invoice_with_label() {
+        let parsed = PaymentParams::from_str(SAMPLE_BIP21_WITH_INVOICE_AND_LABEL).unwrap();
+
+        assert_eq!(parsed.amount(), Some(Amount::from_btc(0.000001).unwrap()));
+        assert_eq!(
+            parsed.address(),
+            Some(
+                Address::from_str("tb1p0vztr8q25czuka5u4ta5pqu0h8dxkf72mam89cpg4tg40fm8wgmqp3gv99")
+                    .unwrap()
+            )
+        );
+        assert_eq!(parsed.memo(), Some("yooo".to_string()));
+        assert_eq!(parsed.network(), Some(Network::Testnet));
+        assert_eq!(parsed.invoice(), Some(Invoice::from_str("lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54").unwrap()));
+        assert_eq!(
+            parsed.node_pubkey(),
+            Some(
+                PublicKey::from_str(
+                    "031c84186f4c39920f191d4cff51ddfc1858b00c9c59f4172bcc0ca3f8da6b4953"
                 )
                 .unwrap()
             )
