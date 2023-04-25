@@ -5,7 +5,7 @@ use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
 use lightning::offers::offer;
 use lightning::offers::offer::Offer;
-use lightning_invoice::{Currency, Invoice, InvoiceDescription};
+use lightning_invoice::{Invoice, InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
 
@@ -48,13 +48,7 @@ impl PaymentParams<'_> {
         match self {
             PaymentParams::OnChain(address) => Some(address.network),
             PaymentParams::Bip21(uri) => Some(uri.address.network),
-            PaymentParams::Bolt11(invoice) => match invoice.currency() {
-                Currency::Bitcoin => Some(Network::Bitcoin),
-                Currency::BitcoinTestnet => Some(Network::Testnet),
-                Currency::Regtest => Some(Network::Regtest),
-                Currency::Simnet => Some(Network::Regtest),
-                Currency::Signet => Some(Network::Signet),
-            },
+            PaymentParams::Bolt11(invoice) => Some(Network::from(invoice.currency())),
             PaymentParams::Bolt12(_) => None, // todo fix after https://github.com/rust-bitcoin/rust-bitcoin/pull/1675
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
@@ -68,13 +62,7 @@ impl PaymentParams<'_> {
         match self {
             PaymentParams::OnChain(address) => Some(address.is_valid_for_network(network)),
             PaymentParams::Bip21(uri) => Some(uri.address.is_valid_for_network(network)),
-            PaymentParams::Bolt11(invoice) => match invoice.currency() {
-                Currency::Bitcoin => Some(network == Network::Bitcoin),
-                Currency::BitcoinTestnet => Some(network == Network::Testnet),
-                Currency::Regtest => Some(network == Network::Regtest),
-                Currency::Simnet => Some(network == Network::Regtest),
-                Currency::Signet => Some(network == Network::Signet),
-            },
+            PaymentParams::Bolt11(invoice) => Some(Network::from(invoice.currency()) == network),
             PaymentParams::Bolt12(_) => None,
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
@@ -106,7 +94,7 @@ impl PaymentParams<'_> {
         match self {
             PaymentParams::OnChain(address) => Some(address.clone()),
             PaymentParams::Bip21(uri) => Some(uri.address.clone()),
-            PaymentParams::Bolt11(_) => None, // todo update after https://github.com/lightningdevkit/rust-lightning/pull/2023
+            PaymentParams::Bolt11(invoice) => invoice.fallback_addresses().first().cloned(),
             PaymentParams::Bolt12(_) => None,
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
@@ -150,7 +138,7 @@ impl PaymentParams<'_> {
             PaymentParams::Bolt12(_) => None,
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(lnurl) => Some(lnurl.clone()),
-            PaymentParams::LightningAddress(ln_addr) => LnUrl::from_url(ln_addr.lnurlp_url()).ok(),
+            PaymentParams::LightningAddress(ln_addr) => Some(LnUrl::from_url(ln_addr.lnurlp_url())),
         }
     }
 }
