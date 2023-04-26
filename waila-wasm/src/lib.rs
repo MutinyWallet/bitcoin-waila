@@ -67,4 +67,9 @@ impl PaymentParams {
     pub fn lnurl(&self) -> Option<String> {
         self.params.lnurl().map(|lnurl| lnurl.to_string())
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn is_lnurl_auth(&self) -> bool {
+        self.params.is_lnurl_auth()
+    }
 }

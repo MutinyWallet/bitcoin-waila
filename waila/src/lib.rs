@@ -141,6 +141,12 @@ impl PaymentParams<'_> {
             PaymentParams::LightningAddress(ln_addr) => Some(LnUrl::from_url(ln_addr.lnurlp_url())),
         }
     }
+
+    pub fn is_lnurl_auth(&self) -> bool {
+        self.lnurl()
+            .map(|lnurl| lnurl.is_lnurl_auth())
+            .unwrap_or(false)
+    }
 }
 
 impl FromStr for PaymentParams<'_> {
