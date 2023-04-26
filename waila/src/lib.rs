@@ -236,7 +236,10 @@ mod tests {
         assert_eq!(parsed.amount_msats(), Some(2_000_000_000));
         assert_eq!(parsed.node_pubkey(), Some(expected_pubkey));
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
-        assert_eq!(parsed.address(), None); // todo: add fallback address
+        assert_eq!(
+            parsed.address(),
+            Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
+        );
         assert_eq!(parsed.memo(), None);
         assert_eq!(parsed.lnurl(), None);
     }
@@ -250,7 +253,10 @@ mod tests {
         assert_eq!(parsed.amount_msats(), Some(2_000_000_000));
         assert_eq!(parsed.node_pubkey(), Some(expected_pubkey));
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
-        assert_eq!(parsed.address(), None); // todo: add fallback address
+        assert_eq!(
+            parsed.address(),
+            Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
+        );
         assert_eq!(parsed.memo(), None);
         assert_eq!(parsed.lnurl(), None);
     }
