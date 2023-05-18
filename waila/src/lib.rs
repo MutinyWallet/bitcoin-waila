@@ -158,6 +158,19 @@ impl PaymentParams<'_> {
             .unwrap_or(false)
     }
 
+    pub fn lightning_address(&self) -> Option<LightningAddress> {
+        match self {
+            PaymentParams::OnChain(_) => None,
+            PaymentParams::Bip21(_) => None,
+            PaymentParams::Bolt11(_) => None,
+            PaymentParams::Bolt12(_) => None,
+            PaymentParams::NodePubkey(_) => None,
+            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LightningAddress(ln_addr) => Some(ln_addr.clone()),
+            PaymentParams::Nostr(_) => None,
+        }
+    }
+
     pub fn nostr_pubkey(&self) -> Option<XOnlyPublicKey> {
         match self {
             PaymentParams::OnChain(_) => None,
@@ -395,7 +408,8 @@ mod tests {
 
     #[test]
     fn parse_lightning_address() {
-        let parsed = PaymentParams::from_str("ben@opreturnbot.com").unwrap();
+        let str = "ben@opreturnbot.com";
+        let parsed = PaymentParams::from_str(str).unwrap();
 
         assert_eq!(parsed.amount(), None);
         assert_eq!(parsed.address(), None);
@@ -403,12 +417,17 @@ mod tests {
         assert_eq!(parsed.network(), None);
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.lightning_address(),
+            Some(LightningAddress::from_str(str).unwrap())
+        );
         assert_eq!(parsed.lnurl(), Some(LnUrl::from_str("lnurl1dp68gurn8ghj7mmswfjhgatjde3x7apwvdhk6tewwajkcmpdddhx7amw9akxuatjd3cz7cn9dc94s6d4").unwrap()));
     }
 
     #[test]
     fn parse_lightning_address_with_prefix() {
-        let parsed = PaymentParams::from_str("lightning:ben@opreturnbot.com").unwrap();
+        let str = "ben@opreturnbot.com";
+        let parsed = PaymentParams::from_str(&format!("lightning:{str}")).unwrap();
 
         assert_eq!(parsed.amount(), None);
         assert_eq!(parsed.address(), None);
@@ -416,6 +435,10 @@ mod tests {
         assert_eq!(parsed.network(), None);
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.lightning_address(),
+            Some(LightningAddress::from_str(str).unwrap())
+        );
         assert_eq!(parsed.lnurl(), Some(LnUrl::from_str("lnurl1dp68gurn8ghj7mmswfjhgatjde3x7apwvdhk6tewwajkcmpdddhx7amw9akxuatjd3cz7cn9dc94s6d4").unwrap()));
     }
 
