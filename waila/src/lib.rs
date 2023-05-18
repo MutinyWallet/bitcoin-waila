@@ -8,6 +8,7 @@ use lightning::offers::offer::Offer;
 use lightning_invoice::{Invoice, InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
+use nostr::prelude::*;
 
 use crate::bip21::UnifiedUri;
 
@@ -22,6 +23,7 @@ pub enum PaymentParams<'a> {
     NodePubkey(PublicKey),
     LnUrl(LnUrl),
     LightningAddress(LightningAddress),
+    Nostr(XOnlyPublicKey),
 }
 
 impl PaymentParams<'_> {
@@ -41,6 +43,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -53,6 +56,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -67,6 +71,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -87,6 +92,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -99,6 +105,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -111,6 +118,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -127,6 +135,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(pubkey) => Some(*pubkey),
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -139,6 +148,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(lnurl) => Some(lnurl.clone()),
             PaymentParams::LightningAddress(ln_addr) => Some(LnUrl::from_url(ln_addr.lnurlp_url())),
+            PaymentParams::Nostr(_) => None,
         }
     }
 
@@ -146,6 +156,19 @@ impl PaymentParams<'_> {
         self.lnurl()
             .map(|lnurl| lnurl.is_lnurl_auth())
             .unwrap_or(false)
+    }
+
+    pub fn nostr_pubkey(&self) -> Option<XOnlyPublicKey> {
+        match self {
+            PaymentParams::OnChain(_) => None,
+            PaymentParams::Bip21(_) => None,
+            PaymentParams::Bolt11(_) => None,
+            PaymentParams::Bolt12(_) => None,
+            PaymentParams::NodePubkey(_) => None,
+            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(key) => Some(key.clone()),
+        }
     }
 }
 
@@ -174,6 +197,12 @@ impl FromStr for PaymentParams<'_> {
                 .map(PaymentParams::LnUrl)
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
                 .map_err(|_| ());
+        } else if lower.starts_with("nostr:") {
+            let str = str.strip_prefix("nostr:").unwrap();
+            return XOnlyPublicKey::from_str(str)
+                .map(PaymentParams::Nostr)
+                .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
+                .map_err(|_| ());
         }
 
         Address::from_str(str)
@@ -184,6 +213,8 @@ impl FromStr for PaymentParams<'_> {
             .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
             .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
             .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
+            .or_else(|_| XOnlyPublicKey::from_str(str).map(PaymentParams::Nostr))
+            .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
             .map_err(|_| ())
     }
 }
@@ -386,5 +417,53 @@ mod tests {
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(parsed.lnurl(), Some(LnUrl::from_str("lnurl1dp68gurn8ghj7mmswfjhgatjde3x7apwvdhk6tewwajkcmpdddhx7amw9akxuatjd3cz7cn9dc94s6d4").unwrap()));
+    }
+
+    #[test]
+    fn parse_nostr_key() {
+        let parsed = PaymentParams::from_str(
+            "npub1u8lnhlw5usp3t9vmpz60ejpyt649z33hu82wc2hpv6m5xdqmuxhs46turz",
+        )
+        .unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.nostr_pubkey(),
+            Some(
+                XOnlyPublicKey::from_str(
+                    "e1ff3bfdd4e40315959b08b4fcc8245eaa514637e1d4ec2ae166b743341be1af"
+                )
+                .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_nostr_key_with_prefix() {
+        let parsed = PaymentParams::from_str(
+            "nostr:npub1u8lnhlw5usp3t9vmpz60ejpyt649z33hu82wc2hpv6m5xdqmuxhs46turz",
+        )
+        .unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.nostr_pubkey(),
+            Some(
+                XOnlyPublicKey::from_str(
+                    "e1ff3bfdd4e40315959b08b4fcc8245eaa514637e1d4ec2ae166b743341be1af"
+                )
+                .unwrap()
+            )
+        );
     }
 }
