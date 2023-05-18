@@ -180,7 +180,7 @@ impl PaymentParams<'_> {
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
-            PaymentParams::Nostr(key) => Some(key.clone()),
+            PaymentParams::Nostr(key) => Some(*key),
         }
     }
 }
@@ -312,7 +312,7 @@ mod tests {
     fn parse_bip_21() {
         let parsed = PaymentParams::from_str(SAMPLE_BIP21).unwrap();
 
-        assert_eq!(parsed.amount(), Some(Amount::from_btc(50 as f64).unwrap()));
+        assert_eq!(parsed.amount(), Some(Amount::from_btc(50_f64).unwrap()));
         assert_eq!(
             parsed.address(),
             Some(Address::from_str("1andreas3batLhQa2FawWjeyjCqyBzypd").unwrap())

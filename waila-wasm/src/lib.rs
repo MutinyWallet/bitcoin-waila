@@ -1,4 +1,5 @@
 use bitcoin::Network;
+use nostr::prelude::ToBech32;
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
@@ -69,7 +70,19 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn lightning_address(&self) -> Option<String> {
+        self.params.lightning_address().map(|addr| addr.to_string())
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn is_lnurl_auth(&self) -> bool {
         self.params.is_lnurl_auth()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn nostr_pubkey(&self) -> Option<String> {
+        self.params
+            .nostr_pubkey()
+            .and_then(|key| key.to_bech32().ok())
     }
 }
