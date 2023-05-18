@@ -155,19 +155,22 @@ impl FromStr for PaymentParams<'_> {
     fn from_str(str: &str) -> Result<Self, Self::Err> {
         let lower = str.to_lowercase();
         if lower.starts_with("lightning:") {
-            return Invoice::from_str(str.strip_prefix("lightning:").unwrap())
+            let str = str.strip_prefix("lightning:").unwrap();
+            return Invoice::from_str(str)
                 .map(PaymentParams::Bolt11)
                 .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
                 .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
                 .map_err(|_| ());
         } else if lower.starts_with("lnurl:") {
-            return LnUrl::from_str(str.strip_prefix("lnurl:").unwrap())
+            let str = str.strip_prefix("lnurl:").unwrap();
+            return LnUrl::from_str(str)
                 .map(PaymentParams::LnUrl)
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
                 .map_err(|_| ());
         } else if lower.starts_with("lnurlp:") {
-            return LnUrl::from_str(str.strip_prefix("lnurlp:").unwrap())
+            let str = str.strip_prefix("lnurlp:").unwrap();
+            return LnUrl::from_str(str)
                 .map(PaymentParams::LnUrl)
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
                 .map_err(|_| ());
@@ -345,6 +348,8 @@ mod tests {
     fn parse_lnurl_with_prefix() {
         let parsed = PaymentParams::from_str(&format!("lnurl:{SAMPLE_LNURL}")).unwrap();
         let parsed_lnurlp = PaymentParams::from_str(&format!("lnurlp:{SAMPLE_LNURL}")).unwrap();
+        let parsed_lightning =
+            PaymentParams::from_str(&format!("lightning:{SAMPLE_LNURL}")).unwrap();
 
         assert_eq!(parsed.amount(), None);
         assert_eq!(parsed.address(), None);
@@ -354,11 +359,25 @@ mod tests {
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(parsed.lnurl(), Some(LnUrl::from_str(SAMPLE_LNURL).unwrap()));
         assert_eq!(parsed.lnurl(), parsed_lnurlp.lnurl());
+        assert_eq!(parsed.lnurl(), parsed_lightning.lnurl());
     }
 
     #[test]
     fn parse_lightning_address() {
         let parsed = PaymentParams::from_str("ben@opreturnbot.com").unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.lnurl(), Some(LnUrl::from_str("lnurl1dp68gurn8ghj7mmswfjhgatjde3x7apwvdhk6tewwajkcmpdddhx7amw9akxuatjd3cz7cn9dc94s6d4").unwrap()));
+    }
+
+    #[test]
+    fn parse_lightning_address_with_prefix() {
+        let parsed = PaymentParams::from_str("lightning:ben@opreturnbot.com").unwrap();
 
         assert_eq!(parsed.amount(), None);
         assert_eq!(parsed.address(), None);
