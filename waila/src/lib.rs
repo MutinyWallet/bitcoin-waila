@@ -191,7 +191,7 @@ impl FromStr for PaymentParams<'_> {
     fn from_str(str: &str) -> Result<Self, Self::Err> {
         let lower = str.to_lowercase();
         if lower.starts_with("lightning:") {
-            let str = str.strip_prefix("lightning:").unwrap();
+            let str = lower.strip_prefix("lightning:").unwrap();
             return Invoice::from_str(str)
                 .map(PaymentParams::Bolt11)
                 .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
@@ -199,19 +199,19 @@ impl FromStr for PaymentParams<'_> {
                 .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
                 .map_err(|_| ());
         } else if lower.starts_with("lnurl:") {
-            let str = str.strip_prefix("lnurl:").unwrap();
+            let str = lower.strip_prefix("lnurl:").unwrap();
             return LnUrl::from_str(str)
                 .map(PaymentParams::LnUrl)
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
                 .map_err(|_| ());
         } else if lower.starts_with("lnurlp:") {
-            let str = str.strip_prefix("lnurlp:").unwrap();
+            let str = lower.strip_prefix("lnurlp:").unwrap();
             return LnUrl::from_str(str)
                 .map(PaymentParams::LnUrl)
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
                 .map_err(|_| ());
         } else if lower.starts_with("nostr:") {
-            let str = str.strip_prefix("nostr:").unwrap();
+            let str = lower.strip_prefix("nostr:").unwrap();
             return XOnlyPublicKey::from_str(str)
                 .map(PaymentParams::Nostr)
                 .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
@@ -294,6 +294,25 @@ mod tests {
     #[test]
     fn parse_invoice_with_prefix() {
         let parsed = PaymentParams::from_str(&format!("lightning:{SAMPLE_INVOICE}")).unwrap();
+        let expected_pubkey = PublicKey::from_str(SAMPLE_PUBKEY).unwrap();
+
+        assert_eq!(parsed.amount(), Some(Amount::from_sat(2_000_000)));
+        assert_eq!(parsed.amount_msats(), Some(2_000_000_000));
+        assert_eq!(parsed.node_pubkey(), Some(expected_pubkey));
+        assert_eq!(parsed.network(), Some(Network::Bitcoin));
+        assert_eq!(
+            parsed.address(),
+            Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
+        );
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[test]
+    fn parse_invoice_with_prefix_capital() {
+        let parsed =
+            PaymentParams::from_str(&format!("LIGHTNING:{}", SAMPLE_INVOICE.to_uppercase()))
+                .unwrap();
         let expected_pubkey = PublicKey::from_str(SAMPLE_PUBKEY).unwrap();
 
         assert_eq!(parsed.amount(), Some(Amount::from_sat(2_000_000)));
