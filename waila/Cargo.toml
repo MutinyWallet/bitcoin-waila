@@ -21,12 +21,15 @@ nostr = { version = "0.22.0-bitcoin-v0.29", default-features = false, features =
 lnurl-rs = { version = "=0.2.4", default-features = false }
 lightning-invoice = { version = "=0.23.0", default-features = false }
 lightning = { version = "0.0.115", default-features = false }
+rgb-std = { version = "0.10.4", optional = true }
+rgb-wallet = { version = "0.10.4", optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 
 [features]
 default = ["std"]
 std = ["bitcoin/std", "lightning-invoice/std", "lightning/std"]
 no-std = ["bitcoin/no-std", "lightning-invoice/no-std", "lightning/no-std"]
+rgb = ["rgb-std", "rgb-wallet"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = true
