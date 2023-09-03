@@ -5,7 +5,7 @@ use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
 use lightning::offers::offer;
 use lightning::offers::offer::Offer;
-use lightning_invoice::{Invoice, InvoiceDescription};
+use lightning_invoice::{Bolt11Invoice, Bolt11InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
 use nostr::prelude::*;
@@ -22,7 +22,7 @@ mod bip21;
 pub enum PaymentParams<'a> {
     OnChain(Address),
     Bip21(UnifiedUri<'a>),
-    Bolt11(Invoice),
+    Bolt11(Bolt11Invoice),
     Bolt12(Offer),
     NodePubkey(PublicKey),
     LnUrl(LnUrl),
@@ -47,8 +47,8 @@ impl PaymentParams<'_> {
                 .and_then(|m| m.try_into().ok())
                 .or_else(|| uri.label.clone().and_then(|l| l.try_into().ok())),
             PaymentParams::Bolt11(invoice) => match invoice.description() {
-                InvoiceDescription::Direct(desc) => Some(desc.to_string()),
-                InvoiceDescription::Hash(_) => None,
+                Bolt11InvoiceDescription::Direct(desc) => Some(desc.to_string()),
+                Bolt11InvoiceDescription::Hash(_) => None,
             },
             PaymentParams::Bolt12(offer) => Some(offer.description().to_string()),
             PaymentParams::NodePubkey(_) => None,
@@ -133,7 +133,7 @@ impl PaymentParams<'_> {
         }
     }
 
-    pub fn invoice(&self) -> Option<Invoice> {
+    pub fn invoice(&self) -> Option<Bolt11Invoice> {
         match self {
             PaymentParams::OnChain(_) => None,
             PaymentParams::Bip21(uri) => uri.extras.lightning.clone(),
@@ -226,7 +226,7 @@ impl FromStr for PaymentParams<'_> {
         let lower = str.to_lowercase();
         if lower.starts_with("lightning:") {
             let str = lower.strip_prefix("lightning:").unwrap();
-            return Invoice::from_str(str)
+            return Bolt11Invoice::from_str(str)
                 .map(PaymentParams::Bolt11)
                 .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
                 .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
@@ -261,7 +261,7 @@ impl FromStr for PaymentParams<'_> {
 
         Address::from_str(str)
             .map(PaymentParams::OnChain)
-            .or_else(|_| Invoice::from_str(str).map(PaymentParams::Bolt11))
+            .or_else(|_| Bolt11Invoice::from_str(str).map(PaymentParams::Bolt11))
             .or_else(|_| UnifiedUri::from_str(str).map(PaymentParams::Bip21))
             .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
             .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
@@ -275,6 +275,7 @@ impl FromStr for PaymentParams<'_> {
 
 #[cfg(test)]
 mod tests {
+    use lightning_invoice::Bolt11Invoice;
     use std::str::FromStr;
 
     use super::*;
@@ -396,7 +397,7 @@ mod tests {
         );
         assert_eq!(parsed.memo(), Some("For lunch Tuesday".to_string()));
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
-        assert_eq!(parsed.invoice(), Some(Invoice::from_str("LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6").unwrap()));
+        assert_eq!(parsed.invoice(), Some(Bolt11Invoice::from_str("LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6").unwrap()));
         assert_eq!(
             parsed.node_pubkey(),
             Some(
@@ -423,7 +424,7 @@ mod tests {
         );
         assert_eq!(parsed.memo(), Some("yooo".to_string()));
         assert_eq!(parsed.network(), Some(Network::Testnet));
-        assert_eq!(parsed.invoice(), Some(Invoice::from_str("lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54").unwrap()));
+        assert_eq!(parsed.invoice(), Some(Bolt11Invoice::from_str("lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54").unwrap()));
         assert_eq!(
             parsed.node_pubkey(),
             Some(
