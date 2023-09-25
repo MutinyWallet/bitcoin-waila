@@ -5,40 +5,54 @@ use std::convert::TryFrom;
 use ::bip21::de::*;
 use ::bip21::*;
 use lightning_invoice::{Bolt11Invoice, ParseOrSemanticError};
+use url::Url;
 
-/// This lets us parse a `lightning` parameter from a BIP21 URI.
-pub type UnifiedUri<'a> = Uri<'a, LightningExtras>;
+/// This lets us parse `lightning` and payjoin parameters from a BIP21 URI.
+pub type UnifiedUri<'a> = Uri<'a, WailaExtras>;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Hash)]
-pub struct LightningExtras {
+pub struct WailaExtras {
     pub lightning: Option<Bolt11Invoice>,
+    pub pj: Option<Url>,
+    pjos: Option<bool>,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
-pub enum LightningParseError {
-    MultipleParams,
-    InvoiceParsingError,
-}
-
-impl From<ParseOrSemanticError> for LightningParseError {
-    fn from(_e: ParseOrSemanticError) -> Self {
-        LightningParseError::InvoiceParsingError
+impl WailaExtras {
+    pub fn disable_output_substitution(&self) -> bool {
+        self.pjos.unwrap_or(false)
     }
 }
 
-impl DeserializationError for LightningExtras {
-    type Error = LightningParseError;
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum ExtraParamsParseError {
+    MultipleParams(String),
+    InvoiceParsingError,
+    MissingEndpoint,
+    NotUtf8(core::str::Utf8Error),
+    BadEndpoint(url::ParseError),
+    UnsecureEndpoint,
+    BadPjOs,
 }
 
-impl<'a> DeserializeParams<'a> for LightningExtras {
-    type DeserializationState = LightningExtras;
+impl From<ParseOrSemanticError> for ExtraParamsParseError {
+    fn from(_e: ParseOrSemanticError) -> Self {
+        ExtraParamsParseError::InvoiceParsingError
+    }
 }
 
-impl<'a> DeserializationState<'a> for LightningExtras {
-    type Value = LightningExtras;
+impl DeserializationError for WailaExtras {
+    type Error = ExtraParamsParseError;
+}
+
+impl<'a> DeserializeParams<'a> for WailaExtras {
+    type DeserializationState = WailaExtras;
+}
+
+impl<'a> DeserializationState<'a> for WailaExtras {
+    type Value = WailaExtras;
 
     fn is_param_known(&self, param: &str) -> bool {
-        matches!(param, "lightning")
+        matches!(param, "lightning" | "pj" | "pjos")
     }
 
     fn deserialize_temp(
@@ -47,21 +61,51 @@ impl<'a> DeserializationState<'a> for LightningExtras {
         value: Param<'_>,
     ) -> Result<ParamKind, <Self::Value as DeserializationError>::Error> {
         match key {
+            "pj" if self.pj.is_none() => {
+                let endpoint = Cow::try_from(value).map_err(ExtraParamsParseError::NotUtf8)?;
+                let url = Url::parse(&endpoint).map_err(ExtraParamsParseError::BadEndpoint)?;
+                self.pj = Some(url);
+
+                Ok(ParamKind::Known)
+            }
+            "pj" => Err(ExtraParamsParseError::MultipleParams(key.to_string())),
+            "pjos" if self.pjos.is_none() => {
+                match &*Cow::try_from(value).map_err(|_| ExtraParamsParseError::BadPjOs)? {
+                    "0" => self.pjos = Some(false),
+                    "1" => self.pjos = Some(true),
+                    _ => return Err(ExtraParamsParseError::BadPjOs),
+                }
+                Ok(ParamKind::Known)
+            }
+            "pjos" => Err(ExtraParamsParseError::MultipleParams(key.to_string())),
             "lightning" if self.lightning.is_none() => {
                 let str =
-                    Cow::try_from(value).map_err(|_| LightningParseError::InvoiceParsingError)?;
+                    Cow::try_from(value).map_err(|_| ExtraParamsParseError::InvoiceParsingError)?;
                 let invoice = Bolt11Invoice::from_str(&str)?;
                 self.lightning = Some(invoice);
 
                 Ok(ParamKind::Known)
             }
-            "lightning" => Err(LightningParseError::MultipleParams),
+            "lightning" => Err(ExtraParamsParseError::MultipleParams(key.to_string())),
             _ => Ok(ParamKind::Unknown),
         }
     }
 
     fn finalize(self) -> Result<Self::Value, <Self::Value as DeserializationError>::Error> {
-        Ok(self)
+        match (self.pj.as_ref(), self.pjos) {
+            (None, None) => Ok(self),
+            (None, Some(_)) => Err(ExtraParamsParseError::MissingEndpoint),
+            (Some(endpoint), _) => {
+                if endpoint.scheme() == "https"
+                    || endpoint.scheme() == "http"
+                        && endpoint.domain().unwrap_or_default().ends_with(".onion")
+                {
+                    Ok(self)
+                } else {
+                    Err(ExtraParamsParseError::UnsecureEndpoint)
+                }
+            }
+        }
     }
 }
 
@@ -72,9 +116,9 @@ mod test {
 
     use lightning_invoice::Bolt11Invoice;
 
-    use crate::bip21::LightningExtras;
+    use crate::bip21::WailaExtras;
 
-    type UnifiedUri<'a> = bip21::Uri<'a, LightningExtras>;
+    type UnifiedUri<'a> = bip21::Uri<'a, WailaExtras>;
 
     #[test]
     fn test_ln_uri() {

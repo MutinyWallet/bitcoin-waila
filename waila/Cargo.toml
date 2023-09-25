@@ -23,6 +23,7 @@ lightning-invoice = { version = "0.24.0", default-features = false }
 lightning = { version = "0.0.116", default-features = false }
 rgb-std = { version = "0.10.4", optional = true }
 rgb-wallet = { version = "0.10.4", optional = true }
+url = "2.4.1"
 
 [features]
 default = ["std"]

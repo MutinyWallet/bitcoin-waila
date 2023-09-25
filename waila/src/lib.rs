@@ -217,6 +217,22 @@ impl PaymentParams<'_> {
             PaymentParams::Rgb(_) => None,
         }
     }
+
+    pub fn payjoin_endpoint(&self) -> Option<Url> {
+        if let PaymentParams::Bip21(uri) = self {
+            uri.extras.pj.clone()
+        } else {
+            None
+        }
+    }
+
+    pub fn disable_output_substitution(&self) -> Option<bool> {
+        if let PaymentParams::Bip21(uri) = self {
+            Some(uri.extras.disable_output_substitution())
+        } else {
+            None
+        }
+    }
 }
 
 impl FromStr for PaymentParams<'_> {
