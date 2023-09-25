@@ -85,4 +85,14 @@ impl PaymentParams {
             .nostr_pubkey()
             .and_then(|key| key.to_bech32().ok())
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn payjoin_endpoint(&self) -> Option<String> {
+        self.params.payjoin_endpoint().map(|n| n.to_string())
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn disable_output_substitution(&self) -> Option<bool> {
+        self.params.disable_output_substitution()
+    }
 }
