@@ -19,6 +19,8 @@ Currently supported:
 - Node Pubkey
 - LNURL
 - Lightning Address
+- Payjoin URI
+- RGB Invoice
 
 
 ## Examples

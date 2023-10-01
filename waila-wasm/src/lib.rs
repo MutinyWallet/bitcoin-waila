@@ -95,4 +95,9 @@ impl PaymentParams {
     pub fn disable_output_substitution(&self) -> Option<bool> {
         self.params.disable_output_substitution()
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn payjoin_supported(&self) -> bool {
+        self.params.payjoin_endpoint().is_some()
+    }
 }

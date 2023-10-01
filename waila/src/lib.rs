@@ -233,6 +233,10 @@ impl PaymentParams<'_> {
             None
         }
     }
+
+    pub fn payjoin_supported(&self) -> bool {
+        self.payjoin_endpoint().is_some()
+    }
 }
 
 impl FromStr for PaymentParams<'_> {
