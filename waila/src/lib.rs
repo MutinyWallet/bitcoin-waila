@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
+use bitcoin::blockdata::constants::ChainHash;
 use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
 use lightning::offers::offer;
@@ -82,7 +83,9 @@ impl PaymentParams<'_> {
             PaymentParams::OnChain(address) => Some(address.is_valid_for_network(network)),
             PaymentParams::Bip21(uri) => Some(uri.address.is_valid_for_network(network)),
             PaymentParams::Bolt11(invoice) => Some(Network::from(invoice.currency()) == network),
-            PaymentParams::Bolt12(_) => None,
+            PaymentParams::Bolt12(offer) => {
+                Some(offer.supports_chain(ChainHash::using_genesis_block(network)))
+            }
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
@@ -139,6 +142,21 @@ impl PaymentParams<'_> {
             PaymentParams::Bip21(uri) => uri.extras.lightning.clone(),
             PaymentParams::Bolt11(invoice) => Some(invoice.clone()),
             PaymentParams::Bolt12(_) => None,
+            PaymentParams::NodePubkey(_) => None,
+            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
+            #[cfg(feature = "rgb")]
+            PaymentParams::Rgb(_) => None,
+        }
+    }
+
+    pub fn offer(&self) -> Option<Offer> {
+        match self {
+            PaymentParams::OnChain(_) => None,
+            PaymentParams::Bip21(_) => None,
+            PaymentParams::Bolt11(_) => None,
+            PaymentParams::Bolt12(offer) => Some(offer.clone()),
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
@@ -303,6 +321,7 @@ mod tests {
     const SAMPLE_PUBKEY: &str =
         "03e7156ae33b0a208d0744199163177e909e80176e55d97a2f221ede0f934dd9ad";
     const SAMPLE_INVOICE: &str = "lnbc20m1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfpp3qjmp7lwpagxun9pygexvgpjdc4jdj85fr9yq20q82gphp2nflc7jtzrcazrra7wwgzxqc8u7754cdlpfrmccae92qgzqvzq2ps8pqqqqqqpqqqqq9qqqvpeuqafqxu92d8lr6fvg0r5gv0heeeqgcrqlnm6jhphu9y00rrhy4grqszsvpcgpy9qqqqqqgqqqqq7qqzq9qrsgqdfjcdk6w3ak5pca9hwfwfh63zrrz06wwfya0ydlzpgzxkn5xagsqz7x9j4jwe7yj7vaf2k9lqsdk45kts2fd0fkr28am0u4w95tt2nsq76cqw0";
+    const SAMPLE_OFFER: &str = "lno1qgs0v8hw8d368q9yw7sx8tejk2aujlyll8cp7tzzyh5h8xyppqqqqqqgqvqcdgq2qenxzatrv46pvggrv64u366d5c0rr2xjc3fq6vw2hh6ce3f9p7z4v4ee0u7avfynjw9q";
     const SAMPLE_BIP21: &str = "bitcoin:1andreas3batLhQa2FawWjeyjCqyBzypd?amount=50&label=Luke-Jr&message=Donation%20for%20project%20xyz";
     const SAMPLE_BIP21_WITH_INVOICE: &str = "bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
     const SAMPLE_BIP21_WITH_INVOICE_AND_LABEL: &str = "bitcoin:tb1p0vztr8q25czuka5u4ta5pqu0h8dxkf72mam89cpg4tg40fm8wgmqp3gv99?amount=0.000001&label=yooo&lightning=lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54";
@@ -351,6 +370,18 @@ mod tests {
             Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
         );
         assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[test]
+    fn parse_offer() {
+        let parsed = PaymentParams::from_str(SAMPLE_OFFER).unwrap();
+
+        assert_eq!(parsed.amount(), Some(Amount::from_sat(100)));
+        assert_eq!(parsed.amount_msats(), Some(100_000));
+        assert!(parsed.valid_for_network(Network::Signet).unwrap_or(false));
+        assert_eq!(parsed.offer().unwrap().to_string(), SAMPLE_OFFER);
+        assert_eq!(parsed.memo().as_deref(), Some("faucet"));
         assert_eq!(parsed.lnurl(), None);
     }
 

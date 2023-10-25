@@ -60,6 +60,11 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn offer(&self) -> Option<String> {
+        self.params.offer().map(|offer| offer.to_string())
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn node_pubkey(&self) -> Option<String> {
         self.params.node_pubkey().map(|pubkey| pubkey.to_string())
     }
