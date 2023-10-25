@@ -21,8 +21,8 @@ nostr = { version = "=0.23.0-bitcoin-v0.29", default-features = false, features 
 lnurl-rs = { version = "0.3", default-features = false }
 lightning-invoice = { version = "0.26.0", default-features = false }
 lightning = { version = "0.0.118", default-features = false }
-rgb-std = { version = "0.10.4", optional = true }
-rgb-wallet = { version = "0.10.4", optional = true }
+rgb-std = { version = "0.10.9", optional = true }
+rgb-wallet = { version = "0.10.9", optional = true }
 url = "2.4.1"
 
 [features]
