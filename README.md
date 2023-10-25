@@ -31,6 +31,7 @@ Currently supported:
 - Node Pubkey
 - LNURL
 - Lightning Address
+- RGB invoice
 
 ## Examples
 
