@@ -65,6 +65,11 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn refund(&self) -> Option<String> {
+        self.params.refund().map(|refund| refund.to_string())
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn node_pubkey(&self) -> Option<String> {
         self.params.node_pubkey().map(|pubkey| pubkey.to_string())
     }
