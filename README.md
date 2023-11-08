@@ -28,9 +28,11 @@ Currently supported:
 - BIP-21 URI
 - Lightning invoice
 - Lightning Offer
+- Bolt 12 Refund
 - Node Pubkey
 - LNURL
 - Lightning Address
+- Nostr Pubkey
 - RGB invoice
 
 ## Examples
@@ -66,6 +68,21 @@ Lightning Address:
 ```rust
 let parsed = bitcoin_waila::PaymentParams::from_str("ben@opreturnbot.com").unwrap();
 assert_eq!(parsed.lnurl(), Some(LnUrl::from_str("lnurl1dp68gurn8ghj7mmswfjhgatjde3x7apwvdhk6tewwajkcmpdddhx7amw9akxuatjd3cz7cn9dc94s6d4").unwrap()));
+```
+
+Bolt 12:
+
+```rust
+let parsed = bitcoin_waila::PaymentParams::from_str("lno1qgs0v8hw8d368q9yw7sx8tejk2aujlyll8cp7tzzyh5h8xyppqqqqqqgqvqcdgq2qenxzatrv46pvggrv64u366d5c0rr2xjc3fq6vw2hh6ce3f9p7z4v4ee0u7avfynjw9q").unwrap();
+assert_eq!(parsed.amount_msats(), Some(100_000));
+assert_eq!(parsed.offer(), Some(Offer::from_str("lno1qgs0v8hw8d368q9yw7sx8tejk2aujlyll8cp7tzzyh5h8xyppqqqqqqgqvqcdgq2qenxzatrv46pvggrv64u366d5c0rr2xjc3fq6vw2hh6ce3f9p7z4v4ee0u7avfynjw9q").unwrap()));
+```
+
+RGB Invoice:
+
+```rust
+let parsed = bitcoin_waila::PaymentParams::from_str("rgb:Cbw1h3zbHgRhA6sxb4FS3Z7GTpdj9MLb7Do88qh5TUH1/RGB20/1+utxob0KPoUVTWL3WqyY6zsJY5giaugWHt5n4hEeWMQymQJmPRFPXL2n").unwrap();
+assert!(matches!(parsed, PaymentParams::Rgb(_)));
 ```
 
 JavaScript:

@@ -662,5 +662,6 @@ mod tests {
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(parsed.nostr_pubkey(), None);
+        assert!(matches!(parsed, PaymentParams::Rgb(_)));
     }
 }
