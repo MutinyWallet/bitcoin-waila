@@ -1,6 +1,6 @@
 [package]
 name = "waila-wasm"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2018"
 authors = ["Ben Carman <benthecarman@live.com>", "Paul Miller <paul@pauljmiller.com>"]
 license = "MIT"
