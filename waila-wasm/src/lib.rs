@@ -102,6 +102,11 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn nostr_wallet_auth(&self) -> Option<String> {
+        self.params.nostr_wallet_auth().map(|u| u.to_string())
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn payjoin_endpoint(&self) -> Option<String> {
         self.params.payjoin_endpoint().map(|n| n.to_string())
     }
