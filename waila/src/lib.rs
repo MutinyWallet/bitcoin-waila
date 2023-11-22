@@ -254,7 +254,7 @@ impl PaymentParams<'_> {
             PaymentParams::Bolt12(_) => None,
             PaymentParams::Bolt12Refund(_) => None,
             PaymentParams::NodePubkey(_) => None,
-            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LnUrl(l) => l.lightning_address().clone(),
             PaymentParams::LightningAddress(ln_addr) => Some(ln_addr.clone()),
             PaymentParams::Nostr(_) => None,
             PaymentParams::FedimintInvite(_) => None,
