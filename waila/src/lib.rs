@@ -397,6 +397,9 @@ impl FromStr for PaymentParams<'_> {
                 .map(PaymentParams::Nostr)
                 .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
                 .map_err(|_| ());
+        } else if lower.starts_with("fedimint:") {
+            let str = lower.strip_prefix("fedimint:").unwrap();
+            return parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite);
         }
 
         #[cfg(feature = "rgb")]
@@ -439,6 +442,7 @@ mod tests {
     const SAMPLE_BIP21_WITH_INVOICE: &str = "bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
     const SAMPLE_BIP21_WITH_INVOICE_AND_LABEL: &str = "bitcoin:tb1p0vztr8q25czuka5u4ta5pqu0h8dxkf72mam89cpg4tg40fm8wgmqp3gv99?amount=0.000001&label=yooo&lightning=lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54";
     const SAMPLE_LNURL: &str = "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS";
+    const SAMPLE_FEDI_INVITE_CODE: &str = "fed11jpr3lgm8tuhcky2r3g287tgk9du7dd7kr95fptdsmkca7cwcvyu0lyqeh0e6rgp4u0shxsfaxycpwqpfwaehxw309askcurgvyhx6at5d9h8jmn9wsknqvfwv3jhvtnxv4jxjcn5vvhxxmmd9udpnpn49yg9w98dejw9u76hmm9";
     const SAMPLE_NWA: &str = "nostr+walletauth://b889ff5b1513b641e2a139f661a661364979c5beee91842f8f0ef42ab558e9d4?relay=wss%3A%2F%2Frelay.damus.io&secret=b8a30fafa48d4795b6c0eec169a383de&required_commands=pay_invoice&optional_commands=get_balance&budget=10000%2Fdaily";
     #[cfg(feature = "rgb")]
     const SAMPLE_RGB_INVOICE: &str = "rgb:Cbw1h3zbHgRhA6sxb4FS3Z7GTpdj9MLb7Do88qh5TUH1/RGB20/1+utxob0KPoUVTWL3WqyY6zsJY5giaugWHt5n4hEeWMQymQJmPRFPXL2n";
@@ -732,8 +736,7 @@ mod tests {
 
     #[test]
     fn parse_fedimint_invite_code() {
-        let str = "fed11jpr3lgm8tuhcky2r3g287tgk9du7dd7kr95fptdsmkca7cwcvyu0lyqeh0e6rgp4u0shxsfaxycpwqpfwaehxw309askcurgvyhx6at5d9h8jmn9wsknqvfwv3jhvtnxv4jxjcn5vvhxxmmd9udpnpn49yg9w98dejw9u76hmm9";
-        let parsed = PaymentParams::from_str(str).unwrap();
+        let parsed = PaymentParams::from_str(SAMPLE_FEDI_INVITE_CODE).unwrap();
 
         assert_eq!(parsed.amount(), None);
         assert_eq!(parsed.address(), None);
@@ -741,7 +744,27 @@ mod tests {
         assert_eq!(parsed.network(), None);
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
-        assert_eq!(parsed.fedimint_invite_code(), Some(str.to_string()));
+        assert_eq!(
+            parsed.fedimint_invite_code(),
+            Some(SAMPLE_FEDI_INVITE_CODE.to_string())
+        );
+    }
+
+    #[test]
+    fn parse_fedimint_invite_code_with_prefix() {
+        let str = format!("fedimint:{SAMPLE_FEDI_INVITE_CODE}");
+        let parsed = PaymentParams::from_str(&str).unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.fedimint_invite_code(),
+            Some(SAMPLE_FEDI_INVITE_CODE.to_string())
+        );
     }
 
     #[test]
