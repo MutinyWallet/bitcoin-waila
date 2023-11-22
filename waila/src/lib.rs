@@ -31,6 +31,7 @@ pub enum PaymentParams<'a> {
     LnUrl(LnUrl),
     LightningAddress(LightningAddress),
     Nostr(XOnlyPublicKey),
+    FedimintInvite(String),
     #[cfg(feature = "rgb")]
     Rgb(RgbInvoice),
 }
@@ -59,6 +60,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -75,6 +77,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(invoice) => invoice.chain.and_then(map_chain_to_network),
         }
@@ -97,6 +100,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(invoice) => invoice
                 .chain
@@ -124,6 +128,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -140,6 +145,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -156,6 +162,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -172,6 +179,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -188,6 +196,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -208,6 +217,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -224,6 +234,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(lnurl) => Some(lnurl.clone()),
             PaymentParams::LightningAddress(ln_addr) => Some(LnUrl::from_url(ln_addr.lnurlp_url())),
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -246,6 +257,7 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(ln_addr) => Some(ln_addr.clone()),
             PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -262,6 +274,24 @@ impl PaymentParams<'_> {
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
             PaymentParams::Nostr(key) => Some(*key),
+            PaymentParams::FedimintInvite(_) => None,
+            #[cfg(feature = "rgb")]
+            PaymentParams::Rgb(_) => None,
+        }
+    }
+
+    pub fn fedimint_invite_code(&self) -> Option<String> {
+        match self {
+            PaymentParams::OnChain(_) => None,
+            PaymentParams::Bip21(_) => None,
+            PaymentParams::Bolt11(_) => None,
+            PaymentParams::Bolt12(_) => None,
+            PaymentParams::Bolt12Refund(_) => None,
+            PaymentParams::NodePubkey(_) => None,
+            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(i) => Some(i.clone()),
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -286,6 +316,19 @@ impl PaymentParams<'_> {
     pub fn payjoin_supported(&self) -> bool {
         self.payjoin_endpoint().is_some()
     }
+}
+
+// just checks if it has correct HRP and variant
+fn parse_fedi_invite_code(str: &str) -> Result<String, ()> {
+    bech32::decode(str)
+        .map_err(|_| ())
+        .and_then(|(hrp, _, variant)| {
+            if hrp == "fed1" && variant == Variant::Bech32m {
+                Ok(str.to_string())
+            } else {
+                Err(())
+            }
+        })
 }
 
 impl FromStr for PaymentParams<'_> {
@@ -340,6 +383,7 @@ impl FromStr for PaymentParams<'_> {
             .or_else(|_| Refund::from_str(str).map(PaymentParams::Bolt12Refund))
             .or_else(|_| XOnlyPublicKey::from_str(str).map(PaymentParams::Nostr))
             .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
+            .or_else(|_| parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite))
             .map_err(|_| ())
     }
 }
@@ -648,6 +692,20 @@ mod tests {
                 .unwrap()
             )
         );
+    }
+
+    #[test]
+    fn parse_fedimint_invite_code() {
+        let str = "fed11jpr3lgm8tuhcky2r3g287tgk9du7dd7kr95fptdsmkca7cwcvyu0lyqeh0e6rgp4u0shxsfaxycpwqpfwaehxw309askcurgvyhx6at5d9h8jmn9wsknqvfwv3jhvtnxv4jxjcn5vvhxxmmd9udpnpn49yg9w98dejw9u76hmm9";
+        let parsed = PaymentParams::from_str(str).unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.fedimint_invite_code(), Some(str.to_string()));
     }
 
     #[cfg(feature = "rgb")]

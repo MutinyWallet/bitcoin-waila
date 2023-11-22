@@ -97,6 +97,11 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn fedimint_invite_code(&self) -> Option<String> {
+        self.params.fedimint_invite_code()
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn payjoin_endpoint(&self) -> Option<String> {
         self.params.payjoin_endpoint().map(|n| n.to_string())
     }
