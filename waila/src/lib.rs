@@ -1,7 +1,9 @@
+use bech32::Variant;
 use std::convert::TryInto;
 use std::str::FromStr;
 
 use bitcoin::blockdata::constants::ChainHash;
+use bitcoin::key::XOnlyPublicKey;
 use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
 use lightning::offers::offer;
@@ -10,11 +12,12 @@ use lightning::offers::refund::Refund;
 use lightning_invoice::{Bolt11Invoice, Bolt11InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
-use nostr::prelude::*;
+use nostr::FromBech32;
 #[cfg(feature = "rgb")]
 use rgbstd::Chain;
 #[cfg(feature = "rgb")]
 use rgbwallet::RgbInvoice;
+use url::Url;
 
 use crate::bip21::UnifiedUri;
 use crate::nwa::NIP49URI;
@@ -92,7 +95,7 @@ impl PaymentParams<'_> {
     /// Returns None if the network is unknown
     pub fn valid_for_network(&self, network: Network) -> Option<bool> {
         match self {
-            PaymentParams::OnChain(address) => Some(address.is_valid_for_network(network)),
+            PaymentParams::OnChain(address) => Some(address.network == network),
             PaymentParams::Bip21(uri) => Some(uri.address.is_valid_for_network(network)),
             PaymentParams::Bolt11(invoice) => Some(Network::from(invoice.currency()) == network),
             PaymentParams::Bolt12(offer) => {
@@ -144,7 +147,7 @@ impl PaymentParams<'_> {
     pub fn address(&self) -> Option<Address> {
         match self {
             PaymentParams::OnChain(address) => Some(address.clone()),
-            PaymentParams::Bip21(uri) => Some(uri.address.clone()),
+            PaymentParams::Bip21(uri) => Some(uri.address.clone().assume_checked()),
             PaymentParams::Bolt11(invoice) => invoice.fallback_addresses().first().cloned(),
             PaymentParams::Bolt12(_) => None,
             PaymentParams::Bolt12Refund(_) => None,
@@ -410,7 +413,7 @@ impl FromStr for PaymentParams<'_> {
         }
 
         Address::from_str(str)
-            .map(PaymentParams::OnChain)
+            .map(|a| PaymentParams::OnChain(a.assume_checked()))
             .or_else(|_| Bolt11Invoice::from_str(str).map(PaymentParams::Bolt11))
             .or_else(|_| UnifiedUri::from_str(str).map(PaymentParams::Bip21))
             .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
@@ -463,7 +466,9 @@ mod tests {
 
     #[test]
     fn parse_address() {
-        let address = Address::from_str("1andreas3batLhQa2FawWjeyjCqyBzypd").unwrap();
+        let address = Address::from_str("1andreas3batLhQa2FawWjeyjCqyBzypd")
+            .unwrap()
+            .assume_checked();
         let parsed = PaymentParams::from_str(&address.to_string()).unwrap();
 
         assert_eq!(parsed.address(), Some(address));
@@ -486,7 +491,11 @@ mod tests {
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
         assert_eq!(
             parsed.address(),
-            Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
+            Some(
+                Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T")
+                    .unwrap()
+                    .assume_checked()
+            )
         );
         assert_eq!(parsed.memo(), None);
         assert_eq!(parsed.lnurl(), None);
@@ -527,7 +536,11 @@ mod tests {
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
         assert_eq!(
             parsed.address(),
-            Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
+            Some(
+                Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T")
+                    .unwrap()
+                    .assume_checked()
+            )
         );
         assert_eq!(parsed.memo(), None);
         assert_eq!(parsed.lnurl(), None);
@@ -546,7 +559,11 @@ mod tests {
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
         assert_eq!(
             parsed.address(),
-            Some(Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").unwrap())
+            Some(
+                Address::from_str("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T")
+                    .unwrap()
+                    .assume_checked()
+            )
         );
         assert_eq!(parsed.memo(), None);
         assert_eq!(parsed.lnurl(), None);
@@ -559,7 +576,11 @@ mod tests {
         assert_eq!(parsed.amount(), Some(Amount::from_btc(50_f64).unwrap()));
         assert_eq!(
             parsed.address(),
-            Some(Address::from_str("1andreas3batLhQa2FawWjeyjCqyBzypd").unwrap())
+            Some(
+                Address::from_str("1andreas3batLhQa2FawWjeyjCqyBzypd")
+                    .unwrap()
+                    .assume_checked()
+            )
         );
         assert_eq!(parsed.memo(), Some("Donation for project xyz".to_string()));
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
@@ -575,7 +596,11 @@ mod tests {
         assert_eq!(parsed.amount(), Some(Amount::from_btc(0.00001).unwrap()));
         assert_eq!(
             parsed.address(),
-            Some(Address::from_str("BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U").unwrap())
+            Some(
+                Address::from_str("BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U")
+                    .unwrap()
+                    .assume_checked()
+            )
         );
         assert_eq!(parsed.memo(), Some("For lunch Tuesday".to_string()));
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
@@ -602,6 +627,7 @@ mod tests {
             Some(
                 Address::from_str("tb1p0vztr8q25czuka5u4ta5pqu0h8dxkf72mam89cpg4tg40fm8wgmqp3gv99")
                     .unwrap()
+                    .assume_checked()
             )
         );
         assert_eq!(parsed.memo(), Some("yooo".to_string()));
