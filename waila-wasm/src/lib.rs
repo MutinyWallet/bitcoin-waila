@@ -3,7 +3,7 @@ use nostr::prelude::ToBech32;
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[wasm_bindgen]
 pub struct PaymentParams {
     string: String,

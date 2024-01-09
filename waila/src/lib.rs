@@ -25,7 +25,7 @@ use crate::nwa::NIP49URI;
 mod bip21;
 mod nwa;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PaymentParams<'a> {
     OnChain(Address),
     Bip21(UnifiedUri<'a>),
