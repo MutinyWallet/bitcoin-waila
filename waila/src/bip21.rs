@@ -4,11 +4,12 @@ use std::convert::TryFrom;
 
 use ::bip21::de::*;
 use ::bip21::*;
+use bitcoin::address::NetworkUnchecked;
 use lightning_invoice::{Bolt11Invoice, ParseOrSemanticError};
 use url::Url;
 
 /// This lets us parse `lightning` and payjoin parameters from a BIP21 URI.
-pub type UnifiedUri<'a> = Uri<'a, WailaExtras>;
+pub type UnifiedUri<'a> = Uri<'a, NetworkUnchecked, WailaExtras>;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Hash)]
 pub struct WailaExtras {
@@ -116,9 +117,7 @@ mod test {
 
     use lightning_invoice::Bolt11Invoice;
 
-    use crate::bip21::WailaExtras;
-
-    type UnifiedUri<'a> = bip21::Uri<'a, WailaExtras>;
+    use crate::bip21::UnifiedUri;
 
     #[test]
     fn test_ln_uri() {
