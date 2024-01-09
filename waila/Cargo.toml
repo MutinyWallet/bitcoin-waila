@@ -1,6 +1,6 @@
 [package]
 name = "bitcoin-waila"
-version = "0.2.6"
+version = "0.3.0"
 edition = "2018"
 authors = ["Ben Carman <benthecarman@live.com>", "Paul Miller <paul@pauljmiller.com>"]
 license = "MIT"
