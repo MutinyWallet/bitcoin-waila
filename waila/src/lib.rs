@@ -461,6 +461,11 @@ impl FromStr for PaymentParams<'_> {
         #[cfg(feature = "liquid")]
         if let Ok(addr) = elements::Address::from_str(str) {
             return Ok(PaymentParams::Liquid(addr));
+        } else if lower.starts_with("bitcoin:") {
+            let substr = &str[8..];
+            if let Ok(addr) = elements::Address::from_str(substr) {
+                return Ok(PaymentParams::Liquid(addr));
+            }
         }
 
         Address::from_str(str)
@@ -539,6 +544,23 @@ mod tests {
     fn parse_liquid_address() {
         let address = elements::Address::from_str(SAMPLE_LIQUID_ADDR).unwrap();
         let parsed = PaymentParams::from_str(&address.to_string()).unwrap();
+
+        assert_eq!(parsed.liquid_address(), Some(address));
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), Some(Network::Bitcoin));
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[cfg(feature = "liquid")]
+    #[test]
+    fn parse_bip21_liquid_address() {
+        let string = format!("bitcoin:{SAMPLE_LIQUID_ADDR}");
+        let address = elements::Address::from_str(SAMPLE_LIQUID_ADDR).unwrap();
+        let parsed = PaymentParams::from_str(&string).unwrap();
 
         assert_eq!(parsed.liquid_address(), Some(address));
         assert_eq!(parsed.address(), None);
