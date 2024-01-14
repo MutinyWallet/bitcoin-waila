@@ -78,8 +78,8 @@ impl PaymentParams<'_> {
             PaymentParams::OnChain(address) => Some(address.network),
             PaymentParams::Bip21(uri) => Some(uri.address.network),
             PaymentParams::Bolt11(invoice) => Some(Network::from(invoice.currency())),
-            PaymentParams::Bolt12(_) => None, // todo fix after https://github.com/rust-bitcoin/rust-bitcoin/pull/1675
-            PaymentParams::Bolt12Refund(_) => None, // todo fix after https://github.com/rust-bitcoin/rust-bitcoin/pull/1675
+            PaymentParams::Bolt12(o) => o.chains().first().cloned().and_then(|c| c.try_into().ok()),
+            PaymentParams::Bolt12Refund(refund) => refund.chain().try_into().ok(),
             PaymentParams::NodePubkey(_) => None,
             PaymentParams::LnUrl(_) => None,
             PaymentParams::LightningAddress(_) => None,
