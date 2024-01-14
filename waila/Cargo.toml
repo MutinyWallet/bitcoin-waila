@@ -18,6 +18,7 @@ crate-type = ["cdylib", "rlib"]
 bech32 = "0.9.1"
 bitcoin = { version = "0.30.2", default-features = false, features = ["serde"] }
 bip21 = "0.3.1"
+elements = { version = "0.23.0", optional = true }
 itertools = "0.12.0"
 nostr = { version = "0.26.0", default-features = false, features = ["nip47"] }
 lnurl-rs = { version = "0.4.0", default-features = false }
@@ -32,6 +33,7 @@ default = ["std"]
 std = ["bitcoin/std", "lightning-invoice/std", "lightning/std", "nostr/std"]
 no-std = ["bitcoin/no-std", "lightning-invoice/no-std", "lightning/no-std", "nostr/alloc"]
 rgb = ["rgb-std", "rgb-wallet"]
+liquid = ["dep:elements"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = true
