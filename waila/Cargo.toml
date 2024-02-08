@@ -26,6 +26,7 @@ lightning = { version = "0.0.119", default-features = false }
 rgb-std = { version = "0.10.9", optional = true }
 rgb-wallet = { version = "0.10.9", optional = true }
 url = "2.4.1"
+moksha-core = "0.1.2"
 
 [features]
 default = ["std"]
