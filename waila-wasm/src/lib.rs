@@ -107,6 +107,11 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn cashu_token(&self) -> Option<String> {
+        self.params.cashu_token().and_then(|t| t.serialize().ok())
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn payjoin_endpoint(&self) -> Option<String> {
         self.params.payjoin_endpoint().map(|n| n.to_string())
     }
