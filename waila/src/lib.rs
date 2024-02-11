@@ -192,7 +192,7 @@ impl PaymentParams<'_> {
     pub fn offer(&self) -> Option<Offer> {
         match self {
             PaymentParams::OnChain(_) => None,
-            PaymentParams::Bip21(_) => None,
+            PaymentParams::Bip21(uri) => uri.extras.b12.clone(),
             PaymentParams::Bolt11(_) => None,
             PaymentParams::Bolt12(offer) => Some(offer.clone()),
             PaymentParams::Bolt12Refund(_) => None,
