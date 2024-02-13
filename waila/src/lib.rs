@@ -30,7 +30,7 @@ mod nwa;
 #[derive(Debug, Clone)]
 pub enum PaymentParams<'a> {
     OnChain(Address),
-    Bip21(UnifiedUri<'a>),
+    Bip21(Box<UnifiedUri<'a>>),
     Bolt11(Bolt11Invoice),
     Bolt12(Offer),
     Bolt12Refund(Refund),
@@ -451,7 +451,7 @@ impl FromStr for PaymentParams<'_> {
         Address::from_str(str)
             .map(|a| PaymentParams::OnChain(a.assume_checked()))
             .or_else(|_| Bolt11Invoice::from_str(str).map(PaymentParams::Bolt11))
-            .or_else(|_| UnifiedUri::from_str(str).map(PaymentParams::Bip21))
+            .or_else(|_| UnifiedUri::from_str(str).map(|u| PaymentParams::Bip21(Box::new(u))))
             .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
             .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
             .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
