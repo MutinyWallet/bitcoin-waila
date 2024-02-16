@@ -485,6 +485,7 @@ mod tests {
     const SAMPLE_FEDI_INVITE_CODE: &str = "fed11jpr3lgm8tuhcky2r3g287tgk9du7dd7kr95fptdsmkca7cwcvyu0lyqeh0e6rgp4u0shxsfaxycpwqpfwaehxw309askcurgvyhx6at5d9h8jmn9wsknqvfwv3jhvtnxv4jxjcn5vvhxxmmd9udpnpn49yg9w98dejw9u76hmm9";
     const SAMPLE_NWA: &str = "nostr+walletauth://b889ff5b1513b641e2a139f661a661364979c5beee91842f8f0ef42ab558e9d4?relay=wss%3A%2F%2Frelay.damus.io&secret=b8a30fafa48d4795b6c0eec169a383de&required_commands=pay_invoice&optional_commands=get_balance&budget=10000%2Fdaily";
     const SAMPLE_CASHU_TOKEN: &str = "cashuAeyJ0b2tlbiI6W3sibWludCI6Imh0dHBzOi8vODMzMy5zcGFjZTozMzM4IiwicHJvb2ZzIjpbeyJhbW91bnQiOjIsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6IjQwNzkxNWJjMjEyYmU2MWE3N2UzZTZkMmFlYjRjNzI3OTgwYmRhNTFjZDA2YTZhZmMyOWUyODYxNzY4YTc4MzciLCJDIjoiMDJiYzkwOTc5OTdkODFhZmIyY2M3MzQ2YjVlNDM0NWE5MzQ2YmQyYTUwNmViNzk1ODU5OGE3MmYwY2Y4NTE2M2VhIn0seyJhbW91bnQiOjgsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6ImZlMTUxMDkzMTRlNjFkNzc1NmIwZjhlZTBmMjNhNjI0YWNhYTNmNGUwNDJmNjE0MzNjNzI4YzcwNTdiOTMxYmUiLCJDIjoiMDI5ZThlNTA1MGI4OTBhN2Q2YzA5NjhkYjE2YmMxZDVkNWZhMDQwZWExZGUyODRmNmVjNjlkNjEyOTlmNjcxMDU5In1dfV0sInVuaXQiOiJzYXQiLCJtZW1vIjoiVGhhbmsgeW91LiJ9";
+    const SAMPLE_CASHU_TOKEN_NO_PAD: &str = "cashuAeyJ0b2tlbiI6W3sibWludCI6Imh0dHBzOi8vODMzMy5zcGFjZTozMzM4IiwicHJvb2ZzIjpbeyJpZCI6IjAwNzU5ZTNmOGIwNmIzNmYiLCJhbW91bnQiOjEsInNlY3JldCI6IjRvRllDQkpKMGRRK1p3L1BqWlFuTDc2WVhEL1Zjb3l3bk9xazA4dkxkUzQ9IiwiQyI6IjAyYTNkZWUyZWEzMmY2ZDQ1YWFmNDQzMTUyNjhmYWFmMzllYjU5ZGI3NmE4OTE3YmY3ZDA5NmFmMDM1MzdhZGYwOSJ9LHsiaWQiOiIwMDc1OWUzZjhiMDZiMzZmIiwiYW1vdW50IjoxLCJzZWNyZXQiOiJNSjg5K2JDdTZrOFU2bGo2bGNqTzcxMUZuUm1sUmZuWlllSFhnS0o4RmNZPSIsIkMiOiIwMzQxZTU4MjBlNGZlODBkOWVmMDJhOWM4MjQ5ZTAyZjVkNDg5ZGUyMWU4N2QwYzUwMjQ2NGQ1ZmI5ZTRkYzY2NDIifV19XSwibWVtbyI6IlNlbnQgdmlhIGVOdXRzLiJ9";
 
     #[cfg(feature = "rgb")]
     const SAMPLE_RGB_INVOICE: &str = "rgb:Cbw1h3zbHgRhA6sxb4FS3Z7GTpdj9MLb7Do88qh5TUH1/RGB20/1+utxob0KPoUVTWL3WqyY6zsJY5giaugWHt5n4hEeWMQymQJmPRFPXL2n";
@@ -845,6 +846,22 @@ mod tests {
         assert_eq!(
             parsed.cashu_token(),
             Some(TokenV3::try_from(SAMPLE_CASHU_TOKEN.to_string()).unwrap())
+        )
+    }
+
+    #[test]
+    fn parse_cashu_token_no_pad() {
+        let parsed = PaymentParams::from_str(SAMPLE_CASHU_TOKEN_NO_PAD).unwrap();
+
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.amount(), Some(Amount::from_sat(2)));
+        assert_eq!(
+            parsed.cashu_token(),
+            Some(TokenV3::try_from(SAMPLE_CASHU_TOKEN_NO_PAD.to_string()).unwrap())
         )
     }
 
