@@ -6,6 +6,8 @@ use bitcoin::blockdata::constants::ChainHash;
 use bitcoin::key::XOnlyPublicKey;
 use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
+#[cfg(feature = "liquid")]
+use elements::AddressParams;
 use lightning::offers::offer;
 use lightning::offers::offer::Offer;
 use lightning::offers::refund::Refund;
@@ -43,6 +45,8 @@ pub enum PaymentParams<'a> {
     CashuToken(TokenV3),
     #[cfg(feature = "rgb")]
     Rgb(RgbInvoice),
+    #[cfg(feature = "liquid")]
+    Liquid(elements::Address),
 }
 
 #[cfg(feature = "rgb")]
@@ -74,6 +78,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -93,6 +99,13 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(invoice) => invoice.chain.and_then(map_chain_to_network),
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(l) => match l.params.clone() {
+                AddressParams::LIQUID => Some(Network::Bitcoin),
+                AddressParams::LIQUID_TESTNET => Some(Network::Testnet),
+                AddressParams::ELEMENTS => None,
+                _ => None,
+            },
         }
     }
 
@@ -121,6 +134,8 @@ impl PaymentParams<'_> {
                 .chain
                 .and_then(map_chain_to_network)
                 .map(|n| n == network),
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => self.network().map(|n| n == network),
         }
     }
 
@@ -148,6 +163,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(token) => Some(token.total_amount() * 1000),
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -167,6 +184,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -186,6 +205,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -205,6 +226,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -224,6 +247,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -247,6 +272,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -266,6 +293,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -291,6 +320,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -310,6 +341,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -329,6 +362,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -367,6 +402,8 @@ impl PaymentParams<'_> {
             PaymentParams::CashuToken(a) => Some(a.clone()),
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
+            #[cfg(feature = "liquid")]
+            PaymentParams::Liquid(_) => None,
         }
     }
 
@@ -388,6 +425,15 @@ impl PaymentParams<'_> {
 
     pub fn payjoin_supported(&self) -> bool {
         self.payjoin_endpoint().is_some()
+    }
+
+    #[cfg(feature = "liquid")]
+    pub fn liquid_address(&self) -> Option<elements::Address> {
+        if let PaymentParams::Liquid(addr) = self {
+            Some(addr.clone())
+        } else {
+            None
+        }
     }
 }
 
@@ -448,6 +494,16 @@ impl FromStr for PaymentParams<'_> {
                 .map_err(|_| ());
         }
 
+        #[cfg(feature = "liquid")]
+        if let Ok(addr) = elements::Address::from_str(str) {
+            return Ok(PaymentParams::Liquid(addr));
+        } else if lower.starts_with("bitcoin:") {
+            let substr = &str[8..];
+            if let Ok(addr) = elements::Address::from_str(substr) {
+                return Ok(PaymentParams::Liquid(addr));
+            }
+        }
+
         Address::from_str(str)
             .map(|a| PaymentParams::OnChain(a.assume_checked()))
             .or_else(|_| Bolt11Invoice::from_str(str).map(PaymentParams::Bolt11))
@@ -487,6 +543,9 @@ mod tests {
     const SAMPLE_CASHU_TOKEN: &str = "cashuAeyJ0b2tlbiI6W3sibWludCI6Imh0dHBzOi8vODMzMy5zcGFjZTozMzM4IiwicHJvb2ZzIjpbeyJhbW91bnQiOjIsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6IjQwNzkxNWJjMjEyYmU2MWE3N2UzZTZkMmFlYjRjNzI3OTgwYmRhNTFjZDA2YTZhZmMyOWUyODYxNzY4YTc4MzciLCJDIjoiMDJiYzkwOTc5OTdkODFhZmIyY2M3MzQ2YjVlNDM0NWE5MzQ2YmQyYTUwNmViNzk1ODU5OGE3MmYwY2Y4NTE2M2VhIn0seyJhbW91bnQiOjgsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6ImZlMTUxMDkzMTRlNjFkNzc1NmIwZjhlZTBmMjNhNjI0YWNhYTNmNGUwNDJmNjE0MzNjNzI4YzcwNTdiOTMxYmUiLCJDIjoiMDI5ZThlNTA1MGI4OTBhN2Q2YzA5NjhkYjE2YmMxZDVkNWZhMDQwZWExZGUyODRmNmVjNjlkNjEyOTlmNjcxMDU5In1dfV0sInVuaXQiOiJzYXQiLCJtZW1vIjoiVGhhbmsgeW91LiJ9";
     #[cfg(feature = "rgb")]
     const SAMPLE_RGB_INVOICE: &str = "rgb:Cbw1h3zbHgRhA6sxb4FS3Z7GTpdj9MLb7Do88qh5TUH1/RGB20/1+utxob0KPoUVTWL3WqyY6zsJY5giaugWHt5n4hEeWMQymQJmPRFPXL2n";
+    #[cfg(feature = "liquid")]
+    const SAMPLE_LIQUID_ADDR: &str =
+        "VJLFq37TtUBqkTf1cwxvMkHhaERzhbEsS3K5bGBFWqVCpf2EkvFTyVZ2yvm23oPBQzg2BMJvfYkFSqo7";
 
     #[test]
     fn parse_node_pubkey() {
@@ -510,6 +569,39 @@ mod tests {
         let parsed = PaymentParams::from_str(&address.to_string()).unwrap();
 
         assert_eq!(parsed.address(), Some(address));
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), Some(Network::Bitcoin));
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[cfg(feature = "liquid")]
+    #[test]
+    fn parse_liquid_address() {
+        let address = elements::Address::from_str(SAMPLE_LIQUID_ADDR).unwrap();
+        let parsed = PaymentParams::from_str(&address.to_string()).unwrap();
+
+        assert_eq!(parsed.liquid_address(), Some(address));
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), Some(Network::Bitcoin));
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.lnurl(), None);
+    }
+
+    #[cfg(feature = "liquid")]
+    #[test]
+    fn parse_bip21_liquid_address() {
+        let string = format!("bitcoin:{SAMPLE_LIQUID_ADDR}");
+        let address = elements::Address::from_str(SAMPLE_LIQUID_ADDR).unwrap();
+        let parsed = PaymentParams::from_str(&string).unwrap();
+
+        assert_eq!(parsed.liquid_address(), Some(address));
+        assert_eq!(parsed.address(), None);
         assert_eq!(parsed.amount(), None);
         assert_eq!(parsed.memo(), None);
         assert_eq!(parsed.network(), Some(Network::Bitcoin));
