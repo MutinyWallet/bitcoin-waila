@@ -26,7 +26,7 @@ lightning = { version = "0.0.121", default-features = false }
 rgb-std = { version = "0.10.9", optional = true }
 rgb-wallet = { version = "0.10.9", optional = true }
 url = "2.4.1"
-moksha-core = "0.1.2"
+moksha-core = { git = "https://github.com/ngutech21/moksha", rev = "1fca7d2223ab8fb1735408f4fcd42eb1891b16d4" }
 
 [features]
 default = ["std"]
