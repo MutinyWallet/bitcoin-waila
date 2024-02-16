@@ -112,6 +112,11 @@ impl PaymentParams {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn fedimint_oob_notes(&self) -> Option<String> {
+        self.params.fedimint_oob_notes().map(|t| t.to_string())
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn payjoin_endpoint(&self) -> Option<String> {
         self.params.payjoin_endpoint().map(|n| n.to_string())
     }
