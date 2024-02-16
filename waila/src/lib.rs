@@ -896,11 +896,13 @@ mod tests {
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(parsed.amount(), Some(Amount::from_sat(10)));
-        // TODO: (@leonardo) there is not `Eq` implementation for `fedimint-mint-client::OOBNotes`
-        // assert_eq!(
-        //     parsed.fedimint_oob_notes(),
-        //     Some(OOBNotes::from_str(SAMPLE_FEDIMINT_OOB_NOTES).unwrap())
-        // )
+        // NOTE: (@leonardo) there is not `Eq` implementation for `fedimint-mint-client::OOBNotes`
+        assert_eq!(
+            parsed.fedimint_oob_notes().unwrap().to_string(),
+            OOBNotes::from_str(SAMPLE_FEDIMINT_OOB_NOTES)
+                .unwrap()
+                .to_string()
+        )
     }
 
     #[test]
