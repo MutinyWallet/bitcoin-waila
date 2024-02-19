@@ -1,4 +1,5 @@
 use bech32::Variant;
+use fedimint_mint_client::OOBNotes;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -41,6 +42,7 @@ pub enum PaymentParams<'a> {
     FedimintInvite(String),
     NostrWalletAuth(NIP49URI),
     CashuToken(TokenV3),
+    FedimintOOBNotes(OOBNotes),
     #[cfg(feature = "rgb")]
     Rgb(RgbInvoice),
 }
@@ -72,6 +74,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -91,6 +94,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(invoice) => invoice.chain.and_then(map_chain_to_network),
         }
@@ -116,6 +120,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(invoice) => invoice
                 .chain
@@ -146,6 +151,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(token) => Some(token.total_amount() * 1000),
+            PaymentParams::FedimintOOBNotes(oob_notes) => Some(oob_notes.total_amount().msats),
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -165,6 +171,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -184,6 +191,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -203,6 +211,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -222,6 +231,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -245,6 +255,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -264,6 +275,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -289,6 +301,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -308,6 +321,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -327,6 +341,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(i) => Some(i.clone()),
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -346,6 +361,7 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(a) => Some(a.clone()),
             PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(_) => None,
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -365,6 +381,27 @@ impl PaymentParams<'_> {
             PaymentParams::FedimintInvite(_) => None,
             PaymentParams::NostrWalletAuth(_) => None,
             PaymentParams::CashuToken(a) => Some(a.clone()),
+            PaymentParams::FedimintOOBNotes(_) => None,
+            #[cfg(feature = "rgb")]
+            PaymentParams::Rgb(_) => None,
+        }
+    }
+
+    pub fn fedimint_oob_notes(&self) -> Option<OOBNotes> {
+        match self {
+            PaymentParams::OnChain(_) => None,
+            PaymentParams::Bip21(_) => None,
+            PaymentParams::Bolt11(_) => None,
+            PaymentParams::Bolt12(_) => None,
+            PaymentParams::Bolt12Refund(_) => None,
+            PaymentParams::NodePubkey(_) => None,
+            PaymentParams::LnUrl(_) => None,
+            PaymentParams::LightningAddress(_) => None,
+            PaymentParams::Nostr(_) => None,
+            PaymentParams::FedimintInvite(_) => None,
+            PaymentParams::NostrWalletAuth(_) => None,
+            PaymentParams::CashuToken(_) => None,
+            PaymentParams::FedimintOOBNotes(a) => Some(a.clone()),
             #[cfg(feature = "rgb")]
             PaymentParams::Rgb(_) => None,
         }
@@ -462,6 +499,7 @@ impl FromStr for PaymentParams<'_> {
             .or_else(|_| NIP49URI::from_str(str).map(PaymentParams::NostrWalletAuth))
             .or_else(|_| parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite))
             .or_else(|_| TokenV3::try_from(str.to_string()).map(PaymentParams::CashuToken))
+            .or_else(|_| OOBNotes::from_str(str).map(PaymentParams::FedimintOOBNotes))
             .map_err(|_| ())
     }
 }
@@ -485,6 +523,7 @@ mod tests {
     const SAMPLE_FEDI_INVITE_CODE: &str = "fed11jpr3lgm8tuhcky2r3g287tgk9du7dd7kr95fptdsmkca7cwcvyu0lyqeh0e6rgp4u0shxsfaxycpwqpfwaehxw309askcurgvyhx6at5d9h8jmn9wsknqvfwv3jhvtnxv4jxjcn5vvhxxmmd9udpnpn49yg9w98dejw9u76hmm9";
     const SAMPLE_NWA: &str = "nostr+walletauth://b889ff5b1513b641e2a139f661a661364979c5beee91842f8f0ef42ab558e9d4?relay=wss%3A%2F%2Frelay.damus.io&secret=b8a30fafa48d4795b6c0eec169a383de&required_commands=pay_invoice&optional_commands=get_balance&budget=10000%2Fdaily";
     const SAMPLE_CASHU_TOKEN: &str = "cashuAeyJ0b2tlbiI6W3sibWludCI6Imh0dHBzOi8vODMzMy5zcGFjZTozMzM4IiwicHJvb2ZzIjpbeyJhbW91bnQiOjIsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6IjQwNzkxNWJjMjEyYmU2MWE3N2UzZTZkMmFlYjRjNzI3OTgwYmRhNTFjZDA2YTZhZmMyOWUyODYxNzY4YTc4MzciLCJDIjoiMDJiYzkwOTc5OTdkODFhZmIyY2M3MzQ2YjVlNDM0NWE5MzQ2YmQyYTUwNmViNzk1ODU5OGE3MmYwY2Y4NTE2M2VhIn0seyJhbW91bnQiOjgsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6ImZlMTUxMDkzMTRlNjFkNzc1NmIwZjhlZTBmMjNhNjI0YWNhYTNmNGUwNDJmNjE0MzNjNzI4YzcwNTdiOTMxYmUiLCJDIjoiMDI5ZThlNTA1MGI4OTBhN2Q2YzA5NjhkYjE2YmMxZDVkNWZhMDQwZWExZGUyODRmNmVjNjlkNjEyOTlmNjcxMDU5In1dfV0sInVuaXQiOiJzYXQiLCJtZW1vIjoiVGhhbmsgeW91LiJ9";
+    const SAMPLE_FEDIMINT_OOB_NOTES: &str = "AgEEyNQjlgD9AaMFEAGPoosRshrR37QwoMzyQtjRqIOw+zqlqJUlMP4tY8PmLkQwDzZxOIqvBRwdWLR7ZR4hCh5CH4pgBDDxJoKh9FSHFuVfaicAF4a2xc8QNYlwtv0BAAGxQ4CfvfXB6XAaMPyVlWjt7a2Z1bvh18bKx9i0NX0KmC/KAwzo7nzxe5aISrcKYw2qheA65rSoOA6oAYs1YegPWIAcKWl4YfPaROIdlv8zfP0CAAGzD8GzMknXfXv102IzMADaL/ZGs9351HPbZMkOxrdB4WeyhEy5bnOFI0YIBUHs/ESKeDVm1Yv9j19y7mDIyXDmvFIwtCXDjFqWE4i0qzrdzv0EAAGsB8LTXGGZyW7KZDE3CtMbWXTgIuBa3A/nll/foeD5VOACUraOkeRMeNIiZvTellBa9CHtIRpWXlt46hKSFWjpQRh4Jk/ga+t0WlJ//Mxihv0gAAGSm+bQkczA4F1lvg9Vh2yJmgGTtElL4U3uhW+xuP5lsxz+kPwR3qUMX0KJfOE4oN5XpwYDQVoPRroiXAcnakM9thPeMyycDMENeNSKQ1LBmA==";
     #[cfg(feature = "rgb")]
     const SAMPLE_RGB_INVOICE: &str = "rgb:Cbw1h3zbHgRhA6sxb4FS3Z7GTpdj9MLb7Do88qh5TUH1/RGB20/1+utxob0KPoUVTWL3WqyY6zsJY5giaugWHt5n4hEeWMQymQJmPRFPXL2n";
 
@@ -844,6 +883,25 @@ mod tests {
         assert_eq!(
             parsed.cashu_token(),
             Some(TokenV3::try_from(SAMPLE_CASHU_TOKEN.to_string()).unwrap())
+        )
+    }
+
+    #[test]
+    fn parse_fedimint_oob_notes() {
+        let parsed = PaymentParams::from_str(SAMPLE_FEDIMINT_OOB_NOTES).unwrap();
+
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(parsed.amount(), Some(Amount::from_sat(10)));
+        // NOTE: (@leonardo) there is not `Eq` implementation for `fedimint-mint-client::OOBNotes`
+        assert_eq!(
+            parsed.fedimint_oob_notes().unwrap().to_string(),
+            OOBNotes::from_str(SAMPLE_FEDIMINT_OOB_NOTES)
+                .unwrap()
+                .to_string()
         )
     }
 
