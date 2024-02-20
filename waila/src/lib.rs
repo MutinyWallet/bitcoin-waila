@@ -13,6 +13,7 @@ use lightning_invoice::{Bolt11Invoice, Bolt11InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
 use moksha_core::token::TokenV3;
+use nostr::FromBech32;
 
 #[cfg(feature = "rgb")]
 use rgbstd::Chain;
@@ -469,6 +470,10 @@ impl FromStr for PaymentParams<'_> {
             let str = lower.strip_prefix("nostr:").unwrap();
             return nostr::PublicKey::from_str(str)
                 .map(PaymentParams::Nostr)
+                .or_else(|_| {
+                    nostr::nips::nip19::Nip19Profile::from_bech32(str)
+                        .map(|p| PaymentParams::Nostr(p.public_key))
+                })
                 .map_err(|_| ());
         } else if lower.starts_with("fedimint:") {
             let str = lower.strip_prefix("fedimint:").unwrap();
@@ -488,11 +493,15 @@ impl FromStr for PaymentParams<'_> {
             .or_else(|_| UnifiedUri::from_str(str).map(|u| PaymentParams::Bip21(Box::new(u))))
             .or_else(|_| LightningAddress::from_str(str).map(PaymentParams::LightningAddress))
             .or_else(|_| LnUrl::from_str(str).map(PaymentParams::LnUrl))
-            .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
+            .or_else(|_| nostr::PublicKey::from_str(str).map(PaymentParams::Nostr))
+            .or_else(|_| {
+                nostr::nips::nip19::Nip19Profile::from_bech32(str)
+                    .map(|p| PaymentParams::Nostr(p.public_key))
+            })
             .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
             .or_else(|_| Refund::from_str(str).map(PaymentParams::Bolt12Refund))
-            .or_else(|_| nostr::PublicKey::from_str(str).map(PaymentParams::Nostr))
             .or_else(|_| NIP49URI::from_str(str).map(PaymentParams::NostrWalletAuth))
+            .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
             .or_else(|_| parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite))
             .or_else(|_| TokenV3::try_from(str.to_string()).map(PaymentParams::CashuToken))
             .or_else(|_| OOBNotes::from_str(str).map(PaymentParams::FedimintOOBNotes))
@@ -827,6 +836,54 @@ mod tests {
             Some(
                 nostr::PublicKey::from_str(
                     "e1ff3bfdd4e40315959b08b4fcc8245eaa514637e1d4ec2ae166b743341be1af"
+                )
+                .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_nprofile_key() {
+        let parsed = PaymentParams::from_str(
+			"nprofile1qqsrhuxx8l9ex335q7he0f09aej04zpazpl0ne2cgukyawd24mayt8gpp4mhxue69uhhytnc9e3k7mgpz4mhxue69uhkg6nzv9ejuumpv34kytnrdaksjlyr9p",
+		)
+			.unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.nostr_pubkey(),
+            Some(
+                nostr::PublicKey::from_str(
+                    "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"
+                )
+                .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_nprofile_with_prefix() {
+        let parsed = PaymentParams::from_str(
+			"nostr:nprofile1qqsrhuxx8l9ex335q7he0f09aej04zpazpl0ne2cgukyawd24mayt8gpp4mhxue69uhhytnc9e3k7mgpz4mhxue69uhkg6nzv9ejuumpv34kytnrdaksjlyr9p",
+		)
+			.unwrap();
+
+        assert_eq!(parsed.amount(), None);
+        assert_eq!(parsed.address(), None);
+        assert_eq!(parsed.memo(), None);
+        assert_eq!(parsed.network(), None);
+        assert_eq!(parsed.invoice(), None);
+        assert_eq!(parsed.node_pubkey(), None);
+        assert_eq!(
+            parsed.nostr_pubkey(),
+            Some(
+                nostr::PublicKey::from_str(
+                    "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"
                 )
                 .unwrap()
             )
