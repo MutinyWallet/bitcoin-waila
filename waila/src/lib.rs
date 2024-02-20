@@ -4,7 +4,6 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use bitcoin::blockdata::constants::ChainHash;
-use bitcoin::key::XOnlyPublicKey;
 use bitcoin::secp256k1::PublicKey;
 use bitcoin::{Address, Amount, Network};
 use lightning::offers::offer;
@@ -13,8 +12,7 @@ use lightning::offers::refund::Refund;
 use lightning_invoice::{Bolt11Invoice, Bolt11InvoiceDescription};
 use lnurl::lightning_address::LightningAddress;
 use lnurl::lnurl::LnUrl;
-use moksha_core::model::TokenV3;
-use nostr::FromBech32;
+use moksha_core::token::TokenV3;
 
 #[cfg(feature = "rgb")]
 use rgbstd::Chain;
@@ -38,7 +36,7 @@ pub enum PaymentParams<'a> {
     NodePubkey(PublicKey),
     LnUrl(LnUrl),
     LightningAddress(LightningAddress),
-    Nostr(XOnlyPublicKey),
+    Nostr(nostr::PublicKey),
     FedimintInvite(String),
     NostrWalletAuth(NIP49URI),
     CashuToken(TokenV3),
@@ -307,7 +305,7 @@ impl PaymentParams<'_> {
         }
     }
 
-    pub fn nostr_pubkey(&self) -> Option<XOnlyPublicKey> {
+    pub fn nostr_pubkey(&self) -> Option<nostr::PublicKey> {
         match self {
             PaymentParams::OnChain(_) => None,
             PaymentParams::Bip21(_) => None,
@@ -469,9 +467,8 @@ impl FromStr for PaymentParams<'_> {
                 .map_err(|_| ());
         } else if lower.starts_with("nostr:") {
             let str = lower.strip_prefix("nostr:").unwrap();
-            return XOnlyPublicKey::from_str(str)
+            return nostr::PublicKey::from_str(str)
                 .map(PaymentParams::Nostr)
-                .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
                 .map_err(|_| ());
         } else if lower.starts_with("fedimint:") {
             let str = lower.strip_prefix("fedimint:").unwrap();
@@ -494,8 +491,7 @@ impl FromStr for PaymentParams<'_> {
             .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
             .or_else(|_| Offer::from_str(str).map(PaymentParams::Bolt12))
             .or_else(|_| Refund::from_str(str).map(PaymentParams::Bolt12Refund))
-            .or_else(|_| XOnlyPublicKey::from_str(str).map(PaymentParams::Nostr))
-            .or_else(|_| XOnlyPublicKey::from_bech32(str).map(PaymentParams::Nostr))
+            .or_else(|_| nostr::PublicKey::from_str(str).map(PaymentParams::Nostr))
             .or_else(|_| NIP49URI::from_str(str).map(PaymentParams::NostrWalletAuth))
             .or_else(|_| parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite))
             .or_else(|_| TokenV3::try_from(str.to_string()).map(PaymentParams::CashuToken))
@@ -805,7 +801,7 @@ mod tests {
         assert_eq!(
             parsed.nostr_pubkey(),
             Some(
-                XOnlyPublicKey::from_str(
+                nostr::PublicKey::from_str(
                     "e1ff3bfdd4e40315959b08b4fcc8245eaa514637e1d4ec2ae166b743341be1af"
                 )
                 .unwrap()
@@ -829,7 +825,7 @@ mod tests {
         assert_eq!(
             parsed.nostr_pubkey(),
             Some(
-                XOnlyPublicKey::from_str(
+                nostr::PublicKey::from_str(
                     "e1ff3bfdd4e40315959b08b4fcc8245eaa514637e1d4ec2ae166b743341be1af"
                 )
                 .unwrap()
