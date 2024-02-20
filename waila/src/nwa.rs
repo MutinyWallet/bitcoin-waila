@@ -1,8 +1,8 @@
 use core::fmt;
 use itertools::Itertools;
-use nostr::key::XOnlyPublicKey;
+use nostr::key::PublicKey;
 use nostr::nips::nip47::{Error, Method};
-use nostr::prelude::form_urlencoded::byte_serialize;
+use nostr::prelude::url::form_urlencoded::byte_serialize;
 use nostr::Url;
 use std::borrow::Cow;
 use std::str::FromStr;
@@ -97,7 +97,7 @@ impl FromStr for NIP49Budget {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct NIP49URI {
     /// App Pubkey
-    pub public_key: XOnlyPublicKey,
+    pub public_key: PublicKey,
     /// URL of the relay of choice where the `App` is connected and the `Signer` must send and listen for messages.
     pub relay_url: Url,
     /// A random identifier that the wallet will use to identify the connection.
@@ -109,7 +109,7 @@ pub struct NIP49URI {
     /// Budget
     pub budget: Option<NIP49Budget>,
     /// App's pubkey for identity verification
-    pub identity: Option<XOnlyPublicKey>,
+    pub identity: Option<PublicKey>,
 }
 
 impl FromStr for NIP49URI {
@@ -122,14 +122,14 @@ impl FromStr for NIP49URI {
         }
 
         if let Some(pubkey) = url.domain() {
-            let public_key = XOnlyPublicKey::from_str(pubkey)?;
+            let public_key = PublicKey::from_str(pubkey)?;
 
             let mut relay_url: Option<Url> = None;
             let mut required_commands: Vec<Method> = vec![];
             let mut optional_commands: Vec<Method> = vec![];
             let mut budget: Option<NIP49Budget> = None;
             let mut secret: Option<String> = None;
-            let mut identity: Option<XOnlyPublicKey> = None;
+            let mut identity: Option<PublicKey> = None;
 
             for (key, value) in url.query_pairs() {
                 match key {
@@ -155,7 +155,7 @@ impl FromStr for NIP49URI {
                         budget = Some(NIP49Budget::from_str(value.as_ref())?);
                     }
                     Cow::Borrowed("identity") => {
-                        identity = Some(XOnlyPublicKey::from_str(value.as_ref())?);
+                        identity = Some(PublicKey::from_str(value.as_ref())?);
                     }
                     _ => (),
                 }
