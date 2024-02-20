@@ -1,6 +1,6 @@
 [package]
 name = "bitcoin-waila"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2018"
 authors = ["Ben Carman <benthecarman@live.com>", "Paul Miller <paul@pauljmiller.com>"]
 license = "MIT"
@@ -9,7 +9,7 @@ repository = "https://github.com/MutinyWallet/bitcoin-waila/"
 readme = "README.md"
 documentation = "https://docs.rs/bitcoin-waila/"
 description = "\"What am I looking at?\" A tool for decoding bitcoin-related strings."
-keywords = ["lightning", "bitcoin", "bip21", "lnurl"]
+keywords = ["lightning", "bitcoin", "bip21", "lnurl", "nostr"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

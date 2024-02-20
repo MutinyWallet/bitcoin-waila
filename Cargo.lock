@@ -400,7 +400,7 @@ checksum = "73290177011694f38ec25e165d0387ab7ea749a4b81cd4c80dae5988229f7a57"
 
 [[package]]
 name = "bitcoin-waila"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bech32",
  "bip21",
@@ -3198,7 +3198,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "waila-wasm"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bitcoin 0.30.2",
  "bitcoin-waila",
