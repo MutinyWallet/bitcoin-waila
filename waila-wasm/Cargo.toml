@@ -1,6 +1,6 @@
 [package]
 name = "waila-wasm"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2018"
 authors = ["Ben Carman <benthecarman@live.com>", "Paul Miller <paul@pauljmiller.com>"]
 license = "MIT"
@@ -15,7 +15,7 @@ keywords = ["lightning", "bitcoin", "bip21", "lnurl"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bitcoin-waila = { path = "../waila", version = "0.4.0" }
+bitcoin-waila = { path = "../waila", version = "0.4.1" }
 bitcoin = "0.30.2"
 nostr = { version = "0.29.0", default-features = false, features = ["std"] }
 wasm-bindgen = "0.2.84"
