@@ -1,4 +1,4 @@
-use bech32::Variant;
+use fedimint_core::api::InviteCode;
 use fedimint_mint_client::OOBNotes;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -38,7 +38,7 @@ pub enum PaymentParams<'a> {
     LnUrl(LnUrl),
     LightningAddress(LightningAddress),
     Nostr(nostr::PublicKey),
-    FedimintInvite(String),
+    FedimintInvite(InviteCode),
     NostrWalletAuth(NIP49URI),
     CashuToken(TokenV3),
     FedimintOOBNotes(OOBNotes),
@@ -326,7 +326,7 @@ impl PaymentParams<'_> {
         }
     }
 
-    pub fn fedimint_invite_code(&self) -> Option<String> {
+    pub fn fedimint_invite_code(&self) -> Option<InviteCode> {
         match self {
             PaymentParams::OnChain(_) => None,
             PaymentParams::Bip21(_) => None,
@@ -427,19 +427,6 @@ impl PaymentParams<'_> {
     }
 }
 
-// just checks if it has correct HRP and variant
-fn parse_fedi_invite_code(str: &str) -> Result<String, ()> {
-    bech32::decode(str)
-        .map_err(|_| ())
-        .and_then(|(hrp, _, variant)| {
-            if hrp == "fed1" && variant == Variant::Bech32m {
-                Ok(str.to_string())
-            } else {
-                Err(())
-            }
-        })
-}
-
 impl FromStr for PaymentParams<'_> {
     type Err = ();
 
@@ -477,7 +464,9 @@ impl FromStr for PaymentParams<'_> {
                 .map_err(|_| ());
         } else if lower.starts_with("fedimint:") {
             let str = lower.strip_prefix("fedimint:").unwrap();
-            return parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite);
+            return InviteCode::from_str(str)
+                .map(PaymentParams::FedimintInvite)
+                .map_err(|_| ());
         }
 
         #[cfg(feature = "rgb")]
@@ -502,7 +491,7 @@ impl FromStr for PaymentParams<'_> {
             .or_else(|_| Refund::from_str(str).map(PaymentParams::Bolt12Refund))
             .or_else(|_| NIP49URI::from_str(str).map(PaymentParams::NostrWalletAuth))
             .or_else(|_| PublicKey::from_str(str).map(PaymentParams::NodePubkey))
-            .or_else(|_| parse_fedi_invite_code(str).map(PaymentParams::FedimintInvite))
+            .or_else(|_| InviteCode::from_str(str).map(PaymentParams::FedimintInvite))
             .or_else(|_| TokenV3::try_from(str.to_string()).map(PaymentParams::CashuToken))
             .or_else(|_| OOBNotes::from_str(str).map(PaymentParams::FedimintOOBNotes))
             .map_err(|_| ())
@@ -525,7 +514,7 @@ mod tests {
     const SAMPLE_BIP21_WITH_INVOICE: &str = "bitcoin:BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U?amount=0.00001&label=sbddesign%3A%20For%20lunch%20Tuesday&message=For%20lunch%20Tuesday&lightning=LNBC10U1P3PJ257PP5YZTKWJCZ5FTL5LAXKAV23ZMZEKAW37ZK6KMV80PK4XAEV5QHTZ7QDPDWD3XGER9WD5KWM36YPRX7U3QD36KUCMGYP282ETNV3SHJCQZPGXQYZ5VQSP5USYC4LK9CHSFP53KVCNVQ456GANH60D89REYKDNGSMTJ6YW3NHVQ9QYYSSQJCEWM5CJWZ4A6RFJX77C490YCED6PEMK0UPKXHY89CMM7SCT66K8GNEANWYKZGDRWRFJE69H9U5U0W57RRCSYSAS7GADWMZXC8C6T0SPJAZUP6";
     const SAMPLE_BIP21_WITH_INVOICE_AND_LABEL: &str = "bitcoin:tb1p0vztr8q25czuka5u4ta5pqu0h8dxkf72mam89cpg4tg40fm8wgmqp3gv99?amount=0.000001&label=yooo&lightning=lntbs1u1pjrww6fdq809hk7mcnp4qvwggxr0fsueyrcer4x075walsv93vqvn3vlg9etesx287x6ddy4xpp5a3drwdx2fmkkgmuenpvmynnl7uf09jmgvtlg86ckkvgn99ajqgtssp5gr3aghgjxlwshnqwqn39c2cz5hw4cnsnzxdjn7kywl40rru4mjdq9qyysgqcqpcxqrpwurzjqfgtsj42x8an5zujpxvfhp9ngwm7u5lu8lvzfucjhex4pq8ysj5q2qqqqyqqv9cqqsqqqqlgqqqqqqqqfqzgl9zq04nzpxyvdr8vj3h98gvnj3luanj2cxcra0q2th4xjsxmtj8k3582l67xq9ffz5586f3nm5ax58xaqjg6rjcj2vzvx2q39v9eqpn0wx54";
     const SAMPLE_LNURL: &str = "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS";
-    const SAMPLE_FEDI_INVITE_CODE: &str = "fed11jpr3lgm8tuhcky2r3g287tgk9du7dd7kr95fptdsmkca7cwcvyu0lyqeh0e6rgp4u0shxsfaxycpwqpfwaehxw309askcurgvyhx6at5d9h8jmn9wsknqvfwv3jhvtnxv4jxjcn5vvhxxmmd9udpnpn49yg9w98dejw9u76hmm9";
+    const SAMPLE_FEDI_INVITE_CODE: &str = "fed11qgqzc2nhwden5te0vejkg6tdd9h8gepwvejkg6tdd9h8garhduhx6at5d9h8jmn9wshxxmmd9uqqzgxg6s3evnr6m9zdxr6hxkdkukexpcs3mn7mj3g5pc5dfh63l4tj6g9zk4er";
     const SAMPLE_NWA: &str = "nostr+walletauth://b889ff5b1513b641e2a139f661a661364979c5beee91842f8f0ef42ab558e9d4?relay=wss%3A%2F%2Frelay.damus.io&secret=b8a30fafa48d4795b6c0eec169a383de&required_commands=pay_invoice&optional_commands=get_balance&budget=10000%2Fdaily";
     const SAMPLE_CASHU_TOKEN: &str = "cashuAeyJ0b2tlbiI6W3sibWludCI6Imh0dHBzOi8vODMzMy5zcGFjZTozMzM4IiwicHJvb2ZzIjpbeyJhbW91bnQiOjIsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6IjQwNzkxNWJjMjEyYmU2MWE3N2UzZTZkMmFlYjRjNzI3OTgwYmRhNTFjZDA2YTZhZmMyOWUyODYxNzY4YTc4MzciLCJDIjoiMDJiYzkwOTc5OTdkODFhZmIyY2M3MzQ2YjVlNDM0NWE5MzQ2YmQyYTUwNmViNzk1ODU5OGE3MmYwY2Y4NTE2M2VhIn0seyJhbW91bnQiOjgsImlkIjoiMDA5YTFmMjkzMjUzZTQxZSIsInNlY3JldCI6ImZlMTUxMDkzMTRlNjFkNzc1NmIwZjhlZTBmMjNhNjI0YWNhYTNmNGUwNDJmNjE0MzNjNzI4YzcwNTdiOTMxYmUiLCJDIjoiMDI5ZThlNTA1MGI4OTBhN2Q2YzA5NjhkYjE2YmMxZDVkNWZhMDQwZWExZGUyODRmNmVjNjlkNjEyOTlmNjcxMDU5In1dfV0sInVuaXQiOiJzYXQiLCJtZW1vIjoiVGhhbmsgeW91LiJ9";
     const SAMPLE_FEDIMINT_OOB_NOTES: &str = "AgEEyNQjlgD9AaMFEAGPoosRshrR37QwoMzyQtjRqIOw+zqlqJUlMP4tY8PmLkQwDzZxOIqvBRwdWLR7ZR4hCh5CH4pgBDDxJoKh9FSHFuVfaicAF4a2xc8QNYlwtv0BAAGxQ4CfvfXB6XAaMPyVlWjt7a2Z1bvh18bKx9i0NX0KmC/KAwzo7nzxe5aISrcKYw2qheA65rSoOA6oAYs1YegPWIAcKWl4YfPaROIdlv8zfP0CAAGzD8GzMknXfXv102IzMADaL/ZGs9351HPbZMkOxrdB4WeyhEy5bnOFI0YIBUHs/ESKeDVm1Yv9j19y7mDIyXDmvFIwtCXDjFqWE4i0qzrdzv0EAAGsB8LTXGGZyW7KZDE3CtMbWXTgIuBa3A/nll/foeD5VOACUraOkeRMeNIiZvTellBa9CHtIRpWXlt46hKSFWjpQRh4Jk/ga+t0WlJ//Mxihv0gAAGSm+bQkczA4F1lvg9Vh2yJmgGTtElL4U3uhW+xuP5lsxz+kPwR3qUMX0KJfOE4oN5XpwYDQVoPRroiXAcnakM9thPeMyycDMENeNSKQ1LBmA==";
@@ -901,7 +890,7 @@ mod tests {
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(
-            parsed.fedimint_invite_code(),
+            parsed.fedimint_invite_code().map(|c| c.to_string()),
             Some(SAMPLE_FEDI_INVITE_CODE.to_string())
         );
     }
@@ -918,7 +907,7 @@ mod tests {
         assert_eq!(parsed.invoice(), None);
         assert_eq!(parsed.node_pubkey(), None);
         assert_eq!(
-            parsed.fedimint_invite_code(),
+            parsed.fedimint_invite_code().map(|c| c.to_string()),
             Some(SAMPLE_FEDI_INVITE_CODE.to_string())
         );
     }

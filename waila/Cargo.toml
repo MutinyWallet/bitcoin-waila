@@ -15,7 +15,6 @@ keywords = ["lightning", "bitcoin", "bip21", "lnurl", "nostr"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bech32 = { version = "0.9.1" }
 bitcoin = { version = "0.30.2", default-features = false, features = ["serde"] }
 bip21 = { version = "0.3.1" }
 itertools = { version = "0.12.1" }
@@ -28,7 +27,8 @@ rgb-wallet = { version = "0.10.9", optional = true }
 url = { version = "2.4.1" }
 moksha-core = { git = "https://github.com/ngutech21/moksha", rev = "18d99977965662d46ccec29fecdb0ce493745917" }
 
-fedimint-mint-client = { git = "https://github.com/fedimint/fedimint", rev = "5ade2536015a12a7e003a42b159ccc4a431e1a32" }
+fedimint-core = "0.3.0-rc.1"
+fedimint-mint-client = "0.3.0-rc.1"
 
 [features]
 default = ["std"]
