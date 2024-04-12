@@ -467,6 +467,11 @@ impl FromStr for PaymentParams<'_> {
             return InviteCode::from_str(str)
                 .map(PaymentParams::FedimintInvite)
                 .map_err(|_| ());
+        } else if lower.starts_with("cashu:") {
+            let str = lower.strip_prefix("cashu:").unwrap();
+            return TokenV3::try_from(str.to_string())
+                .map(PaymentParams::CashuToken)
+                .map_err(|_| ());
         }
 
         #[cfg(feature = "rgb")]
