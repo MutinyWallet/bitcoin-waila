@@ -25,7 +25,7 @@ lightning = { version = "0.0.121", default-features = false }
 rgb-std = { version = "0.10.9", optional = true }
 rgb-wallet = { version = "0.10.9", optional = true }
 url = { version = "2.4.1" }
-moksha-core = { git = "https://github.com/ngutech21/moksha", rev = "18d99977965662d46ccec29fecdb0ce493745917" }
+moksha-core = { version = "0.2.1" }
 
 fedimint-core = "0.3.0"
 fedimint-mint-client = "0.3.0"

@@ -1960,8 +1960,9 @@ dependencies = [
 
 [[package]]
 name = "moksha-core"
-version = "0.2.0-beta"
-source = "git+https://github.com/ngutech21/moksha?rev=18d99977965662d46ccec29fecdb0ce493745917#18d99977965662d46ccec29fecdb0ce493745917"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4923b0e31fd02fe8ebc2f58ed0909c8e1d90f0b5153948d3940e634421240c30"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
