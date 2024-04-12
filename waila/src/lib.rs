@@ -466,6 +466,7 @@ impl FromStr for PaymentParams<'_> {
             let str = lower.strip_prefix("fedimint:").unwrap();
             return InviteCode::from_str(str)
                 .map(PaymentParams::FedimintInvite)
+                .or_else(|_| OOBNotes::from_str(str).map(PaymentParams::FedimintOOBNotes))
                 .map_err(|_| ());
         } else if lower.starts_with("cashu:") {
             let str = lower.strip_prefix("cashu:").unwrap();
